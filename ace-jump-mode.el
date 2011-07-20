@@ -247,7 +247,7 @@ node and call LEAF-FUNC on each leaf node"
           (if leaf-func
               (funcall leaf-func node)))
          (t
-          (error "invalid tree node type"))))))) 
+          (error "[AceJump] Internal Error: invalid tree node type"))))))) 
 
         
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
@@ -289,17 +289,23 @@ node and call LEAF-FUNC on each leaf node"
                
 
 (defun ace-jump-do( query-string )
-  "enter AceJump mode"
+  "The main function to start the AceJump mode.
+QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'."
+  ;; we check the move key to make it valid, cause it can be customized by user
+  (if (or (null ace-jump-mode-move-keys)
+          (< (length ace-jump-mode-move-keys) 2)
+          (not (every #'characterp ace-jump-mode-move-keys)))
+    (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
   (let ((candidate-list (ace-jump-search-candidate query-string)))
     (cond
      ;; cannot find any one
      ((null candidate-list)
-      (error "There is no such character"))
+      (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((= (length candidate-list) 1)
       (goto-char (car candidate-list))
-      (message "Move to the only one directly"))
+      (message "[AceJump] One candicate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
       ;; create background
@@ -343,7 +349,7 @@ node and call LEAF-FUNC on each leaf node"
   (let ((query-char (read-char "Query Char:")))
     (if (ace-jump-query-char-p query-char)
         (ace-jump-do (regexp-quote (make-string 1 query-char)))
-      (error "Non-printable char"))))
+      (error "[AceJump] Non-printable char"))))
 
 (defun ace-jump-word-mode ()
   "AceJump word mode.
@@ -361,7 +367,7 @@ buffer."
       (ace-jump-do (concat "\\b"
                            (regexp-quote (make-string 1 head-char)))))
      (t
-      (error "Non-printable char")))))
+      (error "[AceJump] Non-printable char")))))
 
 
 (defun ace-jump-line-mode ()
@@ -391,7 +397,7 @@ setting `ace-jump-mode-move-keys'"
   (let ((index (/ prefix 4))
         (submode-list-length (length ace-jump-mode-submode-list)))
     (if (< index 0)
-        (error "Invalid prefix command"))
+        (error "[AceJump] Invalid prefix command"))
     (if (>= index submode-list-length)
         (setq index (1- submode-list-length)))
     (funcall (nth index ace-jump-mode-submode-list))))
@@ -430,7 +436,7 @@ setting `ace-jump-mode-move-keys'"
       (ace-jump-done))
      (t
       (ace-jump-done)
-      (error "Unknow tree node")))))
+      (error "[AceJump] Internal error: tree node type is invalid")))))
      
 
 
@@ -478,7 +484,7 @@ setting `ace-jump-mode-move-keys'"
 (defun aj-queue-pop (q)
   "dequeue"
   (if (null (aj-queue-head q))
-      (error "Empty queue"))
+      (error "[AceJump] Interal Error: Empty queue"))
 
   (let ((ret (aj-queue-head q)))
     (if (eq ret (aj-queue-tail q))
