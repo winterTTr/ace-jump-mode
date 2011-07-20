@@ -24,56 +24,57 @@
 ;;; INTRODUCTION
 ;;
 
-;; Where's minor mode comes from ?
-;; 
-;;   When I first use EasyMotion plugin in vim. It really attract me a
-;; lot.  EasyMotion is a insteresting plugin in vim. EasyMotion
-;; provides a much simpler way to use some motions in vim. It takes
-;; the <number> out of <number>w or <number>f{char} by highlighting
-;; all possible choices and allowing you to press one key to jump
-;; directly to the target. So I decide to write one for emacs.
+;; What's this?
 ;;
+;; It is a minor mode for Emacs, enabling fast/direct cursor-moving in
+;; current view.
+
+;; Where does minor mode come from ?
+;;  
+;; I firstly see such kind of moving style is in a vim plugin called
+;; EasyMotion. It really attract me a lot. EasyMotion provides a much
+;; simpler way to use some motions in vim. It takes the out of w or
+;; f{char} by highlighting all possible choices and allowing you to
+;; press one key to jump directly to the target. So I decide to write
+;; one for Emacs.
+;;  
+;; So I must thank to :
+;;         Bartlomiej P. for his PreciseJump
+;;         Kim Silkebækken for his EasyMotion
+
 
 ;; What's ace-jump-mode ?
-;;
-;;   ace-jump-mode is a emacs version of the motion style in EasyMotion.
-;; EasyMotion mode is not the first one which use such motion style.
-;; So, I must thanks to :
-;;   Bartlomiej P.    for his PreciseJump
-;;   Kim Silkebækken  for his EasyMotion
+;;  
+;; ace-jump-mode is an fast/direct cursor location minor mode. It will
+;; create the N-Branch search tree internal and marks all the possible
+;; position with predefined keys in current view. Allowing you to move
+;; to the character/word/line almost directly.
 ;;
 
-;; Do you implement everything from EasyMotion ?
+;; What is implemented now ?
 ;;
-;;   No, and I don't want to make ace-jump exactly the same as
-;; EasyMotion in vim. I think the moving style itself is really cool,
-;; so I rewrite it in emacs. But I do not mean to copy everyting.
-;;   So, if you have any cool suggstion, feel free to tell me at any
-;; time.  I will put that to top of my TODO list :D
+;; I do not implement everything from EasyMotion. Because I what to
+;; make AceJump as simple as possible, and you don’t even need to
+;; spend more than 2 minutes to learn how to use it. So now, there is
+;; only three sub-mode, which can help you to quick move to a specific
+;; character , word and (non-empty) line. Enjoy it~
+;;
+;; Of course, if you have any cool suggestion, feel free to tell me at
+;; anytime. I will put that to top of my TODO list :D
 ;; 
+
 ;;; Usage
 ;; 
 ;; Add the following code to your init file, of course you can select
 ;; the key which you prefer to.
 ;; ----------------------------------------------------------
-;; (add-to-list 'load-path "which-folder-this-file-in/")
-;; (autoload
-;;   'ace-jump-mode
-;;   "ace-jump-mode"
-;;   "Emacs AceJump minor mode"
-;;   t)
+;; (add-to-list 'load-path "which-folder-ace-jump-mode-file-in/")
+;; (require 'ace-jump-mode)
 ;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
-;;
+;;  
 ;; ;;If you also use viper mode :
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
 ;; ----------------------------------------------------------
-;;
-;; If you want your own moving keys, you can custom that as follow,
-;; for example, you only want to use lower case character:
-;;
-;; (setq ace-jump-mode-move-keys
-;;       (loop for i from ?a to ?z collect i))
-;;
 ;;
 
 (eval-when-compile
@@ -90,17 +91,17 @@
   "If we need to ask for the query char before enter `ace-jump-word-mode'")
 
 (defvar ace-jump-mode-submode-list
-  (list #'ace-jump-word-mode
-        #'ace-jump-char-mode
-        #'ace-jump-line-mode)
+  '(ace-jump-word-mode
+    ace-jump-char-mode
+    ace-jump-line-mode)
   "*The mode list when start ace jump mode.
 The sequence is the calling sequence when give prefix argument.
 
 Such as:
   If you use the default sequence, which is
-  (list #'ace-jump-word-mode
-        #'ace-jump-char-mode
-        #'ace-jump-line-mode)
+      '(ace-jump-word-mode
+        ace-jump-char-mode
+        ace-jump-line-mode)
 and using key to start up ace jump mode, such as 'C-c SPC',
 then the usage to start each mode is as below:
 
