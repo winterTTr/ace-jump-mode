@@ -369,6 +369,7 @@ Marked each no empty line and move there"
   (interactive)
   (ace-jump-do "^."))
 
+;;;###autoload
 (defun ace-jump-mode(&optional prefix)
   "AceJump mode is a minor mode for you to quick jump to a
 position in the curret view.
