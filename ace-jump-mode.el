@@ -90,6 +90,10 @@
 (defvar ace-jump-word-mode-use-query-char t
   "If we need to ask for the query char before enter `ace-jump-word-mode'")
 
+(defvar ace-jump-mode-case-sensitive-search t
+  "If non-nil, the ace-jump mode will use case-sensitive search
+Otherwise, ace-jump mode will use case-insensitive search.")
+
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-mode
     ace-jump-char-mode
@@ -173,18 +177,24 @@ is used to highlight the target positions.")
 we can only allow to query printable ascii char"
   (and (> query-char #x1F) (< query-char #x7F)) )
 
-(defun ace-jump-search-candidate( query-string )
-  "Search the QUERY-STRING in current view, and return the candidate position list.
-query-string should be an valid regex used for `search-forward-regexp'.
+(defun ace-jump-search-candidate( re-query-string &optional start-point end-point )
+  "Search the RE-QUERY-STRING in current view, and return the candidate position list.
+RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
+
+You can also specify the START-POINT , END-POINT.
+If you omit them, it will use the full screen in current window.
+
+You can control whether use the case sensitive or not by `ace-jump-mode-case-sensitive-search'.
+
 Every possible `match-beginning' will be collected and return as a list."
   (let* ((current-window (selected-window))
-         (start-point (window-start current-window))
-         (end-point   (window-end   current-window)) )
+         (start-point (or start-point (window-start current-window)))
+         (end-point   (or end-point   (window-end   current-window))))
     (save-excursion
       (goto-char start-point)
-      (let ((case-fold-search nil)) ;; use case sensitive search
-        (loop while (search-forward-regexp query-string end-point t)
-                    collect (match-beginning 0))))) ) 
+      (let ((case-fold-search (not ace-jump-mode-case-sensitive-search)))
+        (loop while (search-forward-regexp re-query-string end-point t)
+                    collect (match-beginning 0)))))) 
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -288,16 +298,22 @@ node and call LEAF-FUNC on each leaf node"
                  (funcall func-update-overlay n))))))
                
 
-(defun ace-jump-do( query-string )
+(defun ace-jump-do( re-query-string &optional start-point end-point )
   "The main function to start the AceJump mode.
-QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'."
+QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
+
+You can set the search area by START-POINT and END-POINT.
+If you omit them, use the full screen as default.
+
+You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitive-search'.
+"
   ;; we check the move key to make it valid, cause it can be customized by user
   (if (or (null ace-jump-mode-move-keys)
           (< (length ace-jump-mode-move-keys) 2)
           (not (every #'characterp ace-jump-mode-move-keys)))
     (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
-  (let ((candidate-list (ace-jump-search-candidate query-string)))
+  (let ((candidate-list (ace-jump-search-candidate re-query-string start-point end-point)))
     (cond
      ;; cannot find any one
      ((null candidate-list)
@@ -310,8 +326,8 @@ QUERY-STRING should be a valid regexp string, which finally pass to `search-forw
      (t
       ;; create background
       (setq ace-jump-background-overlay
-            (make-overlay (window-start (selected-window))
-                          (window-end   (selected-window))
+            (make-overlay (or start-point (window-start (selected-window)))
+                          (or end-point (window-end   (selected-window)))
                           (current-buffer)))
       (overlay-put ace-jump-background-overlay 'face 'ace-jump-face-background)
 
@@ -392,7 +408,11 @@ If you do not want to query char for word mode, you can change
 `ace-jump-word-mode-use-query-char' to nil.
 
 If you don't like the default move keys, you can change it by
-setting `ace-jump-mode-move-keys'"
+setting `ace-jump-mode-move-keys'.
+
+You can constrol whether use the case sensitive via
+`ace-jump-mode-case-sensitive-search'.
+"
   (interactive "p")
   (let ((index (/ prefix 4))
         (submode-list-length (length ace-jump-mode-submode-list)))
