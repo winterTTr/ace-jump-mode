@@ -172,6 +172,9 @@ is used to highlight the target positions.")
 (defvar ace-jump-mode-end-hook nil
   "Funciton(s) to call after stop AceJump mode")
 
+(defvar ace-jump-mode-before-jump-hook nil
+  "Function(s) to call just before moving the cursor to a selected match")
+
 (defun ace-jump-query-char-p ( query-char )
   "Check if the query char is valid,
 we can only allow to query printable ascii char"
@@ -452,6 +455,7 @@ You can constrol whether use the case sensitive via
         (ace-jump-delete-overlay-in-search-tree old-tree)))
      ;; if the node is leaf node, this is the final one
      ((eq (car node) 'leaf)
+      (run-hooks 'ace-jump-mode-before-jump-hook)
       (goto-char (overlay-start (cdr node)))
       (ace-jump-done))
      (t
