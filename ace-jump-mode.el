@@ -140,10 +140,17 @@ for example, you only want to use lower case character:
 (defvar ace-jump-search-tree nil
   "N-branch Search tree. Every leaf node holds the overlay that
 is used to highlight the target positions.")
+(defvar ace-jump-query-char nil
+  "This is local to buffer, save the query char used between internal
+mode change via \"M-n\" or \"M-p\"")
+(defvar ace-jump-current-mode nil
+  "Save the current mode")
 
 (make-variable-buffer-local 'ace-jump-mode)
 (make-variable-buffer-local 'ace-jump-background-overlay)
 (make-variable-buffer-local 'ace-jump-search-tree)
+(make-variable-buffer-local 'ace-jump-query-char)
+(make-variable-buffer-local 'ace-jump-current-mode)
 
 
 (defgroup ace-jump nil
@@ -344,7 +351,15 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitiv
                                                  ace-jump-mode-move-keys)
       
       ;; do minor mode configuration
-      (setq ace-jump-mode " AceJump")
+      (cond
+       ((eq ace-jump-current-mode 'ace-jump-char-mode)
+        (setq ace-jump-mode " AceJump - Char"))
+       ((eq ace-jump-current-mode 'ace-jump-word-mode)
+        (setq ace-jump-mode " AceJump - Word"))
+       ((eq ace-jump-current-mode 'ace-jump-line-mode)
+        (setq ace-jump-mode " AceJump - Line"))
+       (t
+        (setq ace-jump-mode " AceJump")))
       (force-mode-line-update)
 
 
@@ -353,6 +368,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitiv
             (let ( (map (make-keymap)) )
               (dolist (key-code ace-jump-mode-move-keys)
                 (define-key map (make-string 1 key-code) 'ace-jump-move))
+              (define-key map (kbd "C-c C-c") 'ace-jump-quick-exchange)
               (define-key map [t] 'ace-jump-done)
               map))
 
@@ -361,13 +377,47 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitiv
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
       (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))
 
+(defun ace-jump-quick-exchange ()
+  "The function that we can use to quick exhange the current mode between
+word-mode and char-mode"
+  (interactive)
+  (cond
+   ((eq ace-jump-current-mode 'ace-jump-char-mode)
+    (if ace-jump-query-char
+        ;; ace-jump-done will clean the query char, so we need to save it
+        (let ((query-char ace-jump-query-char))
+          (ace-jump-done) 
+          ;; restore the flag
+          (setq ace-jump-query-char query-char)
+          (setq ace-jump-current-mode 'ace-jump-word-mode)
+          (ace-jump-do (concat "\\b"
+                               (regexp-quote (make-string 1 query-char)))))))
+   ((eq ace-jump-current-mode 'ace-jump-word-mode)
+    (if ace-jump-query-char
+        ;; ace-jump-done will clean the query char, so we need to save it
+        (let ((query-char ace-jump-query-char))
+          (ace-jump-done)
+          ;; restore the flag
+          (setq ace-jump-query-char query-char)
+          (setq ace-jump-current-mode 'ace-jump-char-mode)
+          (ace-jump-do (regexp-quote (make-string 1 query-char))))))
+   ((eq ace-jump-current-mode 'ace-jump-line-mode)
+    nil)
+   (t
+    nil)))
+
+
+
 
 (defun ace-jump-char-mode ()
   "AceJump char mode"
   (interactive)
   (let ((query-char (read-char "Query Char:")))
     (if (ace-jump-query-char-p query-char)
-        (ace-jump-do (regexp-quote (make-string 1 query-char)))
+        (progn
+          (setq ace-jump-query-char query-char)
+          (setq ace-jump-current-mode 'ace-jump-char-mode)
+          (ace-jump-do (regexp-quote (make-string 1 query-char))))
       (error "[AceJump] Non-printable char"))))
 
 (defun ace-jump-word-mode ()
@@ -383,6 +433,8 @@ buffer."
      ((null head-char)
       (ace-jump-do "\\b\\sw"))
      ((ace-jump-query-char-p head-char)
+      (setq ace-jump-query-char head-char)
+      (setq ace-jump-current-mode 'ace-jump-word-mode)
       (ace-jump-do (concat "\\b"
                            (regexp-quote (make-string 1 head-char)))))
      (t
@@ -393,6 +445,7 @@ buffer."
   "AceJump line mode.
 Marked each no empty line and move there"
   (interactive)
+  (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^."))
 
 ;;;###autoload
@@ -467,6 +520,11 @@ You can constrol whether use the case sensitive via
 (defun ace-jump-done()
   "stop AceJump motion"
   (interactive)
+  ;; clear the status flag
+  (setq ace-jump-query-char nil)
+  (setq ace-jump-current-mode nil)
+
+  ;; clean the status line
   (setq ace-jump-mode nil)
   (force-mode-line-update)
 
