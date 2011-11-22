@@ -3,7 +3,8 @@
 ;; Copyright (C) 2011 Free Software Foundation, Inc.
 
 ;; Author   : winterTTr <winterTTr@gmail.com>
-;; version  : 1.0
+;; URL      : https://github.com/winterTTr/ace-jump-mode/
+;; Version  : 1.0
 ;; Keywords : motion, location, cursor
 
 ;; This file is part of GNU Emacs.
@@ -76,6 +77,8 @@
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
 ;; ----------------------------------------------------------
 ;;
+
+;; Code goes here
 
 (eval-when-compile
   (require 'cl))
@@ -581,3 +584,5 @@ You can constrol whether use the case sensitive via
 
 
 (provide 'ace-jump-mode)
+
+;;; ace-jump-mode.el ends here
