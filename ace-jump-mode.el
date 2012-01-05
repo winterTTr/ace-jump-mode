@@ -31,21 +31,21 @@
 ;; current view.
 
 ;; Where does minor mode come from ?
-;;  
+;;
 ;; I firstly see such kind of moving style is in a vim plugin called
 ;; EasyMotion. It really attract me a lot. EasyMotion provides a much
 ;; simpler way to use some motions in vim. It takes the out of w or
 ;; f{char} by highlighting all possible choices and allowing you to
 ;; press one key to jump directly to the target. So I decide to write
 ;; one for Emacs.
-;;  
+;;
 ;; So I must thank to :
 ;;         Bartlomiej P. for his PreciseJump
 ;;         Kim Silkebækken for his EasyMotion
 
 
 ;; What's ace-jump-mode ?
-;;  
+;;
 ;; ace-jump-mode is an fast/direct cursor location minor mode. It will
 ;; create the N-Branch search tree internal and marks all the possible
 ;; position with predefined keys in current view. Allowing you to move
@@ -62,17 +62,17 @@
 ;;
 ;; Of course, if you have any cool suggestion, feel free to tell me at
 ;; anytime. I will put that to top of my TODO list :D
-;; 
+;;
 
 ;;; Usage
-;; 
+;;
 ;; Add the following code to your init file, of course you can select
 ;; the key which you prefer to.
 ;; ----------------------------------------------------------
 ;; (add-to-list 'load-path "which-folder-ace-jump-mode-file-in/")
 ;; (require 'ace-jump-mode)
 ;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
-;;  
+;;
 ;; ;;If you also use viper mode :
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
 ;; ----------------------------------------------------------
@@ -82,12 +82,12 @@
 
 (eval-when-compile
   (require 'cl))
-  
+
 
 ;;; register as a minor mode
 (or (assq 'ace-jump-mode minor-mode-alist)
     (nconc minor-mode-alist
-          (list '(ace-jump-mode ace-jump-mode))))
+           (list '(ace-jump-mode ace-jump-mode))))
 
 ;; custoize variable
 (defvar ace-jump-word-mode-use-query-char t
@@ -132,7 +132,7 @@ fill each possible location.
 
 If you want your own moving keys, you can custom that as follow,
 for example, you only want to use lower case character:
-(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ") 
+(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ")
 
 
 ;;; some buffer specific variable
@@ -171,7 +171,7 @@ mode change via \"M-n\" or \"M-p\"")
   '((((class color)) (:foreground "red"))
     (((background dark)) (:foreground "gray100"))
     (((background light)) (:foreground "gray0"))
-     (t (:foreground "gray100"))) 
+    (t (:foreground "gray100")))
   "Face for foreground of AceJump motion"
   :group 'ace-jump)
 
@@ -207,7 +207,7 @@ Every possible `match-beginning' will be collected and return as a list."
       (goto-char start-point)
       (let ((case-fold-search (not ace-jump-mode-case-sensitive-search)))
         (loop while (search-forward-regexp re-query-string end-point t)
-                    collect (match-beginning 0)))))) 
+              collect (match-beginning 0))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -230,7 +230,7 @@ while a child node list when type is 'branch"
       (setq left-leaf-node (1+ left-leaf-node))
       (if (<= left-leaf-node max-child-node)
           ;; current child can fill the left leaf
-          (progn 
+          (progn
             (setf (cdr node)
                   (loop for i from 1 to left-leaf-node
                         collect (cons 'leaf nil)))
@@ -247,7 +247,7 @@ while a child node list when type is 'branch"
                                 n)))
           (setq left-leaf-node (- left-leaf-node max-child-node)))))
     ;; return the root node
-    root)) 
+    root))
 
 (defun ace-jump-tree-preorder-traverse (tree &optional leaf-func branch-func)
   "we move over tree via preorder, and call BRANCH-FUNC on each branch
@@ -261,7 +261,7 @@ node and call LEAF-FUNC on each leaf node"
         (setq s (cdr s))
         (cond
          ((eq (car node) 'branch)
-            ;; a branch node
+          ;; a branch node
           (if branch-func
               (funcall branch-func node))
           ;; push all child node into stack
@@ -270,9 +270,9 @@ node and call LEAF-FUNC on each leaf node"
           (if leaf-func
               (funcall leaf-func node)))
          (t
-          (error "[AceJump] Internal Error: invalid tree node type"))))))) 
+          (error "[AceJump] Internal Error: invalid tree node type")))))))
 
-        
+
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
   "Populate the overlay to search tree, every leaf will give one overlay"
   (let* ((position-list candidate-list)
@@ -284,7 +284,7 @@ node and call LEAF-FUNC on each leaf node"
                                   (setq position-list (cdr position-list))))))
     (ace-jump-tree-preorder-traverse tree func-create-overlay)
     tree))
-  
+
 
 (defun ace-jump-delete-overlay-in-search-tree (tree)
   "Delete all the overlay in search tree leaf node"
@@ -293,7 +293,7 @@ node and call LEAF-FUNC on each leaf node"
                                (setf (cdr node) nil))))
     (ace-jump-tree-preorder-traverse tree func-delete-overlay)))
 
-     
+
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
   "Update overlay 'display property using each name in keys"
   (let* ((key ?\0)
@@ -307,9 +307,9 @@ node and call LEAF-FUNC on each leaf node"
                (setq key k)
                (if (eq (car n) 'branch)
                    (ace-jump-tree-preorder-traverse n
-                                                       func-update-overlay)
+                                                    func-update-overlay)
                  (funcall func-update-overlay n))))))
-               
+
 
 (defun ace-jump-do( re-query-string &optional start-point end-point )
   "The main function to start the AceJump mode.
@@ -324,7 +324,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitiv
   (if (or (null ace-jump-mode-move-keys)
           (< (length ace-jump-mode-move-keys) 2)
           (not (every #'characterp ace-jump-mode-move-keys)))
-    (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
+      (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
   (let ((candidate-list (ace-jump-search-candidate re-query-string start-point end-point)))
     (cond
@@ -346,13 +346,13 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitiv
 
       ;; construct search tree and populate overlay into tree
       (setq ace-jump-search-tree (ace-jump-tree-breadth-first-construct
-                                     (length candidate-list)
-                                     (length ace-jump-mode-move-keys)))
+                                  (length candidate-list)
+                                  (length ace-jump-mode-move-keys)))
       (ace-jump-populate-overlay-to-search-tree ace-jump-search-tree
-                                                   candidate-list)
+                                                candidate-list)
       (ace-jump-update-overlay-in-search-tree ace-jump-search-tree
-                                                 ace-jump-mode-move-keys)
-      
+                                              ace-jump-mode-move-keys)
+
       ;; do minor mode configuration
       (cond
        ((eq ace-jump-current-mode 'ace-jump-char-mode)
@@ -389,7 +389,7 @@ word-mode and char-mode"
     (if ace-jump-query-char
         ;; ace-jump-done will clean the query char, so we need to save it
         (let ((query-char ace-jump-query-char))
-          (ace-jump-done) 
+          (ace-jump-done)
           ;; restore the flag
           (setq ace-jump-query-char query-char)
           (setq ace-jump-current-mode 'ace-jump-word-mode)
@@ -412,36 +412,34 @@ word-mode and char-mode"
 
 
 
-(defun ace-jump-char-mode ()
+(defun ace-jump-char-mode (query-char)
   "AceJump char mode"
-  (interactive)
-  (let ((query-char (read-char "Query Char:")))
-    (if (ace-jump-query-char-p query-char)
-        (progn
-          (setq ace-jump-query-char query-char)
-          (setq ace-jump-current-mode 'ace-jump-char-mode)
-          (ace-jump-do (regexp-quote (make-string 1 query-char))))
-      (error "[AceJump] Non-printable char"))))
+  (interactive (list (read-char "Query Char:")))
+  (if (ace-jump-query-char-p query-char)
+      (progn
+        (setq ace-jump-query-char query-char)
+        (setq ace-jump-current-mode 'ace-jump-char-mode)
+        (ace-jump-do (regexp-quote (make-string 1 query-char))))
+    (error "[AceJump] Non-printable char")))
 
-(defun ace-jump-word-mode ()
+(defun ace-jump-word-mode (head-char)
   "AceJump word mode.
 You can set `ace-jump-word-mode-use-query-char' to nil to prevent
 asking for a head char, that will mark all the word in current
 buffer."
-  (interactive)
-  (let ((head-char (if ace-jump-word-mode-use-query-char
-                       (read-char "Head Char:")
-                     nil)))
-    (cond
-     ((null head-char)
-      (ace-jump-do "\\b\\sw"))
-     ((ace-jump-query-char-p head-char)
-      (setq ace-jump-query-char head-char)
-      (setq ace-jump-current-mode 'ace-jump-word-mode)
-      (ace-jump-do (concat "\\b"
-                           (regexp-quote (make-string 1 head-char)))))
-     (t
-      (error "[AceJump] Non-printable char")))))
+  (interactive (list (if ace-jump-word-mode-use-query-char
+                         (read-char "Head Char:")
+                       nil)))
+  (cond
+   ((null head-char)
+    (ace-jump-do "\\b\\sw"))
+   ((ace-jump-query-char-p head-char)
+    (setq ace-jump-query-char head-char)
+    (setq ace-jump-current-mode 'ace-jump-word-mode)
+    (ace-jump-do (concat "\\b"
+                         (regexp-quote (make-string 1 head-char)))))
+   (t
+    (error "[AceJump] Non-printable char"))))
 
 
 (defun ace-jump-line-mode ()
@@ -479,7 +477,7 @@ You can constrol whether use the case sensitive via
         (error "[AceJump] Invalid prefix command"))
     (if (>= index submode-list-length)
         (setq index (1- submode-list-length)))
-    (funcall (nth index ace-jump-mode-submode-list))))
+    (call-interactively (nth index ace-jump-mode-submode-list))))
 
 (defun ace-jump-move ()
   "move cursor based on user input"
@@ -503,8 +501,8 @@ You can constrol whether use the case sensitive via
         ;; whose child is the sub tree nodes
         (setq ace-jump-search-tree (cons 'branch (cdr node)))
         (ace-jump-update-overlay-in-search-tree ace-jump-search-tree
-                                                   ace-jump-mode-move-keys)
-                                            
+                                                ace-jump-mode-move-keys)
+
         ;; this is important, we need remove the subtree first before
         ;; do delete, we set the child nodes to nil
         (setf (cdr node) nil)
@@ -517,7 +515,7 @@ You can constrol whether use the case sensitive via
      (t
       (ace-jump-done)
       (error "[AceJump] Internal error: tree node type is invalid")))))
-     
+
 
 
 (defun ace-jump-done()
@@ -533,19 +531,19 @@ You can constrol whether use the case sensitive via
 
   ;; delete background overlay
   (when (not (null ace-jump-background-overlay))
-      (delete-overlay ace-jump-background-overlay)
-      (setq ace-jump-background-overlay nil))
+    (delete-overlay ace-jump-background-overlay)
+    (setq ace-jump-background-overlay nil))
 
   ;; delete overlays in search tree
   (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
   (setq ace-jump-search-tree nil)
-  
+
   (setq overriding-local-map nil)
   (run-hooks 'ace-jump-mode-end-hook)
 
   (remove-hook 'mouse-leave-buffer-hook 'ace-jump-done)
   (remove-hook 'kbd-macro-termination-hook 'ace-jump-done))
-  
+
 
 ;;;; ============================================
 ;;;; Utilities for ace-jump-mode
@@ -579,7 +577,7 @@ You can constrol whether use the case sensitive via
           (setf (aj-queue-tail q) nil))
       ;; multi item left, move forward the head
       (setf (aj-queue-head q) (cdr ret)))
-    (car ret))) 
+    (car ret)))
 
 
 
