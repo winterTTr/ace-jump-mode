@@ -509,6 +509,7 @@ You can constrol whether use the case sensitive via
         (ace-jump-delete-overlay-in-search-tree old-tree)))
      ;; if the node is leaf node, this is the final one
      ((eq (car node) 'leaf)
+      (push-mark (point) t)
       (run-hooks 'ace-jump-mode-before-jump-hook)
       (goto-char (overlay-start (cdr node)))
       (ace-jump-done))
