@@ -94,8 +94,7 @@
   "If we need to ask for the query char before enter `ace-jump-word-mode'")
 
 (defvar ace-jump-mode-case-fold case-fold-search
-  "If non-nil, the ace-jump mode will use case-sensitive search
-Otherwise, ace-jump mode will use case-insensitive search.
+  "If non-nil, the ace-jump mode will ignore case.
 
 The default value is set to the same as `case-fold-search'.")
 
