@@ -93,7 +93,7 @@
 (defvar ace-jump-word-mode-use-query-char t
   "If we need to ask for the query char before enter `ace-jump-word-mode'")
 
-(defvar ace-jump-mode-case-sensitive-search t
+(defvar ace-jump-mode-case-fold case-fold-search
   "If non-nil, the ace-jump mode will use case-sensitive search
 Otherwise, ace-jump mode will use case-insensitive search.")
 
@@ -197,7 +197,7 @@ RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
 You can also specify the START-POINT , END-POINT.
 If you omit them, it will use the full screen in current window.
 
-You can control whether use the case sensitive or not by `ace-jump-mode-case-sensitive-search'.
+You can control whether use the case sensitive or not by `ace-jump-mode-case-fold'.
 
 Every possible `match-beginning' will be collected and return as a list."
   (let* ((current-window (selected-window))
@@ -205,7 +205,7 @@ Every possible `match-beginning' will be collected and return as a list."
          (end-point   (or end-point   (window-end   current-window))))
     (save-excursion
       (goto-char start-point)
-      (let ((case-fold-search (not ace-jump-mode-case-sensitive-search)))
+      (let ((case-fold-search ace-jump-mode-case-fold))
         (loop while (search-forward-regexp re-query-string end-point t)
               collect (match-beginning 0))))))
 
@@ -318,7 +318,7 @@ QUERY-STRING should be a valid regexp string, which finally pass to `search-forw
 You can set the search area by START-POINT and END-POINT.
 If you omit them, use the full screen as default.
 
-You can constrol whether use the case sensitive via `ace-jump-mode-case-sensitive-search'.
+You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 "
   ;; we check the move key to make it valid, cause it can be customized by user
   (if (or (null ace-jump-mode-move-keys)
@@ -468,7 +468,7 @@ If you don't like the default move keys, you can change it by
 setting `ace-jump-mode-move-keys'.
 
 You can constrol whether use the case sensitive via
-`ace-jump-mode-case-sensitive-search'.
+`ace-jump-mode-case-fold'.
 "
   (interactive "p")
   (let ((index (/ prefix 4))
