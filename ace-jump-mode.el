@@ -95,7 +95,9 @@
 
 (defvar ace-jump-mode-case-fold case-fold-search
   "If non-nil, the ace-jump mode will use case-sensitive search
-Otherwise, ace-jump mode will use case-insensitive search.")
+Otherwise, ace-jump mode will use case-insensitive search.
+
+The default value is set to the same as `case-fold-search'.")
 
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-mode
