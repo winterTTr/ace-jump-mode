@@ -4,7 +4,7 @@
 
 ;; Author   : winterTTr <winterTTr@gmail.com>
 ;; URL      : https://github.com/winterTTr/ace-jump-mode/
-;; Version  : 1.0
+;; Version  : 1.1
 ;; Keywords : motion, location, cursor
 
 ;; This file is part of GNU Emacs.
