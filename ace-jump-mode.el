@@ -335,7 +335,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
      ;; we only find one, so move to it directly
      ((= (length candidate-list) 1)
       (goto-char (car candidate-list))
-      (message "[AceJump] One candicate, move to it directly"))
+      (message "[AceJump] One candidate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
       ;; create background
