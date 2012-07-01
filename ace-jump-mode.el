@@ -301,7 +301,14 @@ node and call LEAF-FUNC on each leaf node"
          (func-update-overlay (lambda (node)
                                 (overlay-put (cdr node)
                                              'display
-                                             (make-string 1 key)))))
+                             (concat (make-string 1 key)
+                                     ;; when tab, we use more space to prevent screen
+                                     ;; from messing up
+                                     (when (string= (buffer-substring
+                                                     (overlay-start (cdr node))
+                                                     (1+ (overlay-start (cdr node))))
+                                                    "\t")
+                                       (make-string (1- tab-width) ? )))))))
     (loop for k in keys
           for n in (cdr tree)
           do (progn
