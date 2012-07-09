@@ -4,7 +4,7 @@
 
 ;; Author   : winterTTr <winterTTr@gmail.com>
 ;; URL      : https://github.com/winterTTr/ace-jump-mode/
-;; Version  : 1.1
+;; Version  : 2.0
 ;; Keywords : motion, location, cursor
 
 ;; This file is part of GNU Emacs.
@@ -200,7 +200,8 @@ If you omit them, it will use the full screen in current window.
 
 You can control whether use the case sensitive or not by `ace-jump-mode-case-fold'.
 
-Every possible `match-beginning' will be collected and return as a list."
+Every possible `match-beginning' will be collected.
+The returned value is a list of `aj-position' record."
   (let* ((current-window (selected-window))
          (start-point (or start-point (window-start current-window)))
          (end-point   (or end-point   (window-end   current-window))))
@@ -208,7 +209,9 @@ Every possible `match-beginning' will be collected and return as a list."
       (goto-char start-point)
       (let ((case-fold-search ace-jump-mode-case-fold))
         (loop while (search-forward-regexp re-query-string end-point t)
-              collect (match-beginning 0))))))
+              collect (make-aj-position :offset (match-beginning 0)
+                                        :buffer nil
+                                        :window current-window))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -278,7 +281,7 @@ node and call LEAF-FUNC on each leaf node"
   "Populate the overlay to search tree, every leaf will give one overlay"
   (let* ((position-list candidate-list)
          (func-create-overlay (lambda (node)
-                                (let* ((pos (car position-list))
+                                (let* ((pos (aj-position-offset (car position-list)))
                                        (ol (make-overlay pos (1+ pos) (current-buffer))))
                                   (setf (cdr node) ol)
                                   (overlay-put ol 'face 'ace-jump-face-foreground)
@@ -341,7 +344,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((= (length candidate-list) 1)
-      (goto-char (car candidate-list))
+      (goto-char (aj-position-offset (car candidate-list)))
       (message "[AceJump] One candidate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
@@ -557,6 +560,7 @@ You can constrol whether use the case sensitive via
 ;;;; ============================================
 ;;;; Utilities for ace-jump-mode
 ;;;; ============================================
+(defstruct aj-position offset buffer window)
 
 (defstruct aj-queue head tail)
 
