@@ -139,7 +139,7 @@ for example, you only want to use lower case character:
 ;;; some buffer specific variable
 (defvar ace-jump-mode nil
   "AceJump minor mode.")
-(defvar ace-jump-background-overlay nil
+(defvar ace-jump-background-overlay-list nil
   "Background overlay which will grey all the display")
 (defvar ace-jump-search-tree nil
   "N-branch Search tree. Every leaf node holds the overlay that
@@ -151,7 +151,7 @@ mode change via \"M-n\" or \"M-p\"")
   "Save the current mode")
 
 (make-variable-buffer-local 'ace-jump-mode)
-(make-variable-buffer-local 'ace-jump-background-overlay)
+(make-variable-buffer-local 'ace-jump-background-overlay-list)
 (make-variable-buffer-local 'ace-jump-search-tree)
 (make-variable-buffer-local 'ace-jump-query-char)
 (make-variable-buffer-local 'ace-jump-current-mode)
@@ -322,6 +322,16 @@ node and call LEAF-FUNC on each leaf node"
                  (funcall func-update-overlay n))))))
 
 
+
+(defun ace-jump-query-visual-areas ()
+  "Search all the possible buffers that is showing now"
+  (loop for f in (frame-list)
+        append (loop for w in (window-list f)
+                     collect (make-aj-visual-area :buffer (window-buffer w)
+                                                  :window w
+                                                  :frame f))))
+
+
 (defun ace-jump-do( re-query-string &optional start-point end-point )
   "The main function to start the AceJump mode.
 QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
@@ -337,7 +347,8 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
           (not (every #'characterp ace-jump-mode-move-keys)))
       (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
-  (let ((candidate-list (ace-jump-search-candidate re-query-string start-point end-point)))
+  (let ((visual-areas (ace-jump-query-visual-areas))
+        (candidate-list (ace-jump-search-candidate re-query-string start-point end-point)))
     (cond
      ;; cannot find any one
      ((null candidate-list)
@@ -349,11 +360,13 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
      ;; more than one, we need to enter AceJump mode
      (t
       ;; create background
-      (setq ace-jump-background-overlay
-            (make-overlay (or start-point (window-start (selected-window)))
-                          (or end-point (window-end   (selected-window)))
-                          (current-buffer)))
-      (overlay-put ace-jump-background-overlay 'face 'ace-jump-face-background)
+      (setq ace-jump-background-overlay-list
+            (loop for va in visual-areas
+                  collect (let ((ol (make-overlay (window-start (aj-visual-area-window va))
+                                                  (window-end (aj-visual-area-window va))
+                                                  (aj-visual-area-buffer va))))
+                            (overlay-put ol 'face 'ace-jump-face-background)
+                            ol)))
 
       ;; construct search tree and populate overlay into tree
       (setq ace-jump-search-tree (ace-jump-tree-breadth-first-construct
@@ -502,7 +515,7 @@ You can constrol whether use the case sensitive via
      ;; example, when there is only three selections in screen
      ;; (totally five move-keys), but user press the forth move key
      ((null node)
-      (message "No such selection")
+      (message "No such position candidate.")
       (ace-jump-done))
      ;; this is a branch node, which means there need further
      ;; selection
@@ -542,9 +555,9 @@ You can constrol whether use the case sensitive via
   (force-mode-line-update)
 
   ;; delete background overlay
-  (when (not (null ace-jump-background-overlay))
-    (delete-overlay ace-jump-background-overlay)
-    (setq ace-jump-background-overlay nil))
+  (loop for ol in ace-jump-background-overlay-list
+        do (delete-overlay ol))
+  (setq ace-jump-background-overlay-list nil)
 
   ;; delete overlays in search tree
   (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
@@ -561,6 +574,8 @@ You can constrol whether use the case sensitive via
 ;;;; Utilities for ace-jump-mode
 ;;;; ============================================
 (defstruct aj-position offset buffer window)
+
+(defstruct aj-visual-area buffer window frame)
 
 (defstruct aj-queue head tail)
 
