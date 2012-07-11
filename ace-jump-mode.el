@@ -198,27 +198,27 @@ mode change via \"M-n\" or \"M-p\"")
 we can only allow to query printable ascii char"
   (and (> query-char #x1F) (< query-char #x7F)) )
 
-(defun ace-jump-search-candidate( re-query-string &optional start-point end-point )
+(defun ace-jump-search-candidate( re-query-string visual-area-list)
   "Search the RE-QUERY-STRING in current view, and return the candidate position list.
 RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
-
-You can also specify the START-POINT , END-POINT.
-If you omit them, it will use the full screen in current window.
 
 You can control whether use the case sensitive or not by `ace-jump-mode-case-fold'.
 
 Every possible `match-beginning' will be collected.
 The returned value is a list of `aj-position' record."
-  (let* ((current-window (selected-window))
-         (start-point (or start-point (window-start current-window)))
-         (end-point   (or end-point   (window-end   current-window))))
-    (save-excursion
-      (goto-char start-point)
-      (let ((case-fold-search ace-jump-mode-case-fold))
-        (loop while (search-forward-regexp re-query-string end-point t)
-              collect (make-aj-position :offset (match-beginning 0)
-                                        :buffer nil
-                                        :window current-window))))))
+  (loop for va in visual-area-list
+        append (let* ((current-window (aj-visual-area-window va))
+                      (start-point (window-start current-window))
+                      (end-point   (window-end   current-window))
+                      (current-buffer (window-buffer current-window)))
+                 (with-selected-window current-window
+                   (save-excursion
+                     (goto-char start-point)
+                     (let ((case-fold-search ace-jump-mode-case-fold))
+                       (loop while (search-forward-regexp re-query-string end-point t)
+                             collect (make-aj-position :offset (match-beginning 0)
+                                                       :buffer current-buffer
+                                                       :window current-window))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -330,8 +330,8 @@ node and call LEAF-FUNC on each leaf node"
 
 
 
-(defun ace-jump-query-visual-areas ()
-  "Search all the possible buffers that is showing now"
+(defun ace-jump-list-visual-area()
+  "Based on `ace-jump-mode-scope', search the possible buffers that is showing now."
   (cond
    ((eq ace-jump-mode-scope 'frame)
     (loop for f in (frame-list)
@@ -353,12 +353,9 @@ node and call LEAF-FUNC on each leaf node"
     (error "[AceJump] Invalid ace-jump-mode-scope, please check your configuration"))))
 
 
-(defun ace-jump-do( re-query-string &optional start-point end-point )
+(defun ace-jump-do( re-query-string )
   "The main function to start the AceJump mode.
 QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
-
-You can set the search area by START-POINT and END-POINT.
-If you omit them, use the full screen as default.
 
 You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 "
@@ -368,21 +365,22 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
           (not (every #'characterp ace-jump-mode-move-keys)))
       (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
-  (let ((visual-areas (ace-jump-query-visual-areas))
-        (candidate-list (ace-jump-search-candidate re-query-string start-point end-point)))
+  (let* ((visual-area-list (ace-jump-list-visual-area))
+         (candidate-list (ace-jump-search-candidate re-query-string visual-area-list)))
     (cond
      ;; cannot find any one
      ((null candidate-list)
+      (setq ace-jump-current-mode nil)
       (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
-     ((= (length candidate-list) 1)
-      (goto-char (aj-position-offset (car candidate-list)))
+     ((eq (cdr candidate-list) nil)
+      (ace-jump-jump-to (car candidate-list))
       (message "[AceJump] One candidate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
       ;; create background
       (setq ace-jump-background-overlay-list
-            (loop for va in visual-areas
+            (loop for va in visual-area-list
                   collect (let ((ol (make-overlay (window-start (aj-visual-area-window va))
                                                   (window-end (aj-visual-area-window va))
                                                   (aj-visual-area-buffer va))))
@@ -424,6 +422,14 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
       (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))
+
+
+(defun ace-jump-jump-to (position)
+  "Jump to the POSITION, which is a `aj-position' structure storing the position information"
+  (let ((w (aj-position-window position)))
+    (select-frame-set-input-focus (window-frame w))
+    (select-window w)
+    (goto-char (aj-position-offset position))))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
