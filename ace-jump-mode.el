@@ -98,6 +98,13 @@
 
 The default value is set to the same as `case-fold-search'.")
 
+(defvar ace-jump-mode-scope 'frame
+  "Define ace-jump-mode work scope.
+Now, there three kind of scope:
+1. 'frame : ace jump can work with buffers across the frame, this is also the default.
+2. 'window: ace jump will work with buffers within current window
+3. 'buffer: ace jump will only work on current buffer")
+
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-mode
     ace-jump-char-mode
@@ -133,7 +140,7 @@ fill each possible location.
 
 If you want your own moving keys, you can custom that as follow,
 for example, you only want to use lower case character:
-(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ")
+\(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ")
 
 
 ;;; some buffer specific variable
@@ -325,11 +332,25 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-query-visual-areas ()
   "Search all the possible buffers that is showing now"
-  (loop for f in (frame-list)
-        append (loop for w in (window-list f)
-                     collect (make-aj-visual-area :buffer (window-buffer w)
-                                                  :window w
-                                                  :frame f))))
+  (cond
+   ((eq ace-jump-mode-scope 'frame)
+    (loop for f in (frame-list)
+          append (loop for w in (window-list f)
+                       collect (make-aj-visual-area :buffer (window-buffer w)
+                                                    :window w
+                                                    :frame f))))
+   ((eq ace-jump-mode-scope 'window)
+    (loop for w in (window-list (selected-frame))
+          collect (make-aj-visual-area :buffer (window-buffer w)
+                                       :window w
+                                       :frame (selected-frame))))
+   ((eq ace-jump-mode-scope 'buffer)
+    (list 
+     (make-aj-visual-area :buffer (current-buffer)
+                          :window (selected-window)
+                          :frame  (selected-frame))))
+   (t
+    (error "[AceJump] Invalid ace-jump-mode-scope, please check your configuration"))))
 
 
 (defun ace-jump-do( re-query-string &optional start-point end-point )
