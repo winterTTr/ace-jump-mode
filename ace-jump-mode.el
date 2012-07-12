@@ -186,6 +186,9 @@ mode change via \"M-n\" or \"M-p\"")
 (defvar ace-jump-mode-before-jump-hook nil
   "Function(s) to call just before moving the cursor to a selected match")
 
+(defvar ace-jump-allow-invisible t
+  "Whether invisible text can be jumped to.")
+
 (defun ace-jump-query-char-p ( query-char )
   "Check if the query char is valid,
 we can only allow to query printable ascii char"
@@ -208,6 +211,7 @@ Every possible `match-beginning' will be collected and return as a list."
       (goto-char start-point)
       (let ((case-fold-search ace-jump-mode-case-fold))
         (loop while (search-forward-regexp re-query-string end-point t)
+              if (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
               collect (match-beginning 0))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
