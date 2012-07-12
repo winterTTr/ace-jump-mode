@@ -157,11 +157,11 @@ mode change via \"M-n\" or \"M-p\"")
 (defvar ace-jump-current-mode nil
   "Save the current mode")
 
-(make-variable-buffer-local 'ace-jump-mode)
-(make-variable-buffer-local 'ace-jump-background-overlay-list)
-(make-variable-buffer-local 'ace-jump-search-tree)
-(make-variable-buffer-local 'ace-jump-query-char)
-(make-variable-buffer-local 'ace-jump-current-mode)
+;(make-variable-buffer-local 'ace-jump-mode)
+;(make-variable-buffer-local 'ace-jump-background-overlay-list)
+;(make-variable-buffer-local 'ace-jump-search-tree)
+;(make-variable-buffer-local 'ace-jump-query-char)
+;(make-variable-buffer-local 'ace-jump-current-mode)
 
 
 (defgroup ace-jump nil
@@ -273,25 +273,39 @@ node and call LEAF-FUNC on each leaf node"
         (cond
          ((eq (car node) 'branch)
           ;; a branch node
-          (if branch-func
-              (funcall branch-func node))
+          (when branch-func
+            (funcall branch-func node))
           ;; push all child node into stack
           (setq s (append (cdr node) s)))
          ((eq (car node) 'leaf)
-          (if leaf-func
-              (funcall leaf-func node)))
+          (when leaf-func
+            (funcall leaf-func node)))
          (t
-          (error "[AceJump] Internal Error: invalid tree node type")))))))
+          (message "[AceJump] Internal Error: invalid tree node type")))))))
 
 
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
   "Populate the overlay to search tree, every leaf will give one overlay"
-  (let* ((position-list candidate-list)
+  
+  (let* (;; create the locally dynamic variable for the following function
+         (position-list candidate-list)
+         
+         ;; make the function to create overlay for each leaf node,
+         ;; here we only create each overlay for each candidate
+         ;; position, , but leave the 'display property to be empty,
+         ;; which will be fill in "update-overlay" function
          (func-create-overlay (lambda (node)
-                                (let* ((pos (aj-position-offset (car position-list)))
-                                       (ol (make-overlay pos (1+ pos) (current-buffer))))
+                                (let* ((p (car position-list))
+                                       (offset (aj-position-offset p))
+                                       (b (aj-position-buffer p))
+                                       (ol (make-overlay offset (1+ offset) b)))
+                                  ;; update leaf node to remember the ol
                                   (setf (cdr node) ol)
                                   (overlay-put ol 'face 'ace-jump-face-foreground)
+                                  ;; associate the aj-position data with overlay
+                                  ;; so that we can use it to do the final jump
+                                  (overlay-put ol 'aj-data p)
+                                  ;; next candidate node
                                   (setq position-list (cdr position-list))))))
     (ace-jump-tree-preorder-traverse tree func-create-overlay)
     tree))
@@ -304,24 +318,40 @@ node and call LEAF-FUNC on each leaf node"
                                (setf (cdr node) nil))))
     (ace-jump-tree-preorder-traverse tree func-delete-overlay)))
 
+(defun ace-jump-buffer-substring (pos)
+  "Get the char under the POS"
+  (let ((w (aj-position-window pos))
+        (offset (aj-position-offset pos)))
+    (with-selected-window w
+        (buffer-substring offset (1+ offset)))))
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
   "Update overlay 'display property using each name in keys"
-  (let* ((key ?\0)
-         (func-update-overlay (lambda (node)
-                                (overlay-put (cdr node)
-                                             'display
-                             (concat (make-string 1 key)
-                                     ;; when tab, we use more space to prevent screen
-                                     ;; from messing up
-                                     (when (string= (buffer-substring
-                                                     (overlay-start (cdr node))
-                                                     (1+ (overlay-start (cdr node))))
-                                                    "\t")
-                                       (make-string (1- tab-width) ? )))))))
+  (let* (;; create dynamic variable for following function
+         (key ?\0)
+         ;; populdate each leaf node to be the specific key,
+         ;; this only update 'display' property of overlay,
+         ;; so that user can see the key from screen and select
+         (func-update-overlay
+          (lambda (node)
+            (let ((ol (cdr node)))
+              (overlay-put
+               ol
+               'display
+               (concat (make-string 1 key)
+                       ;; when tab, we use more space to prevent screen
+                       ;; from messing up
+                       (let ((pos (overlay-get ol 'aj-data)))
+                         (if (string=
+                              (ace-jump-buffer-substring pos)
+                              "\t")
+                             (make-string (1- tab-width) ? )
+                           ""))))))))
     (loop for k in keys
           for n in (cdr tree)
           do (progn
+               ;; update "key" variable so that the function can use
+               ;; the correct context
                (setq key k)
                (if (eq (car n) 'branch)
                    (ace-jump-tree-preorder-traverse n
@@ -374,23 +404,27 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((eq (cdr candidate-list) nil)
+      (push-mark (point) t)
+      (run-hooks 'ace-jump-mode-before-jump-hook)
       (ace-jump-jump-to (car candidate-list))
       (message "[AceJump] One candidate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
-      ;; create background
+      ;; create background for each visual area
       (setq ace-jump-background-overlay-list
             (loop for va in visual-area-list
-                  collect (let ((ol (make-overlay (window-start (aj-visual-area-window va))
-                                                  (window-end (aj-visual-area-window va))
-                                                  (aj-visual-area-buffer va))))
+                  collect (let* ((w (aj-visual-area-window va))
+                                 (b (aj-visual-area-buffer va))
+                                 (ol (make-overlay (window-start w)
+                                                   (window-end w)
+                                                   b)))
                             (overlay-put ol 'face 'ace-jump-face-background)
                             ol)))
 
       ;; construct search tree and populate overlay into tree
-      (setq ace-jump-search-tree (ace-jump-tree-breadth-first-construct
-                                  (length candidate-list)
-                                  (length ace-jump-mode-move-keys)))
+      (setq ace-jump-search-tree
+            (ace-jump-tree-breadth-first-construct (length candidate-list)
+                                                   (length ace-jump-mode-move-keys)))
       (ace-jump-populate-overlay-to-search-tree ace-jump-search-tree
                                                 candidate-list)
       (ace-jump-update-overlay-in-search-tree ace-jump-search-tree
@@ -562,7 +596,7 @@ You can constrol whether use the case sensitive via
      ((eq (car node) 'leaf)
       (push-mark (point) t)
       (run-hooks 'ace-jump-mode-before-jump-hook)
-      (goto-char (overlay-start (cdr node)))
+      (ace-jump-jump-to (overlay-get (cdr node) 'aj-data))
       (ace-jump-done))
      (t
       (ace-jump-done)
