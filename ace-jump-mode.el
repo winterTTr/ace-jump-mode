@@ -186,8 +186,11 @@ mode change via \"M-n\" or \"M-p\"")
 (defvar ace-jump-mode-before-jump-hook nil
   "Function(s) to call just before moving the cursor to a selected match")
 
-(defvar ace-jump-allow-invisible t
-  "Whether invisible text can be jumped to.")
+(defvar ace-jump-allow-invisible nil
+  "Control if ace-jump should select the invisible char as candidate.
+Normally, the ace jump mark cannot be seen if the target character is invisible.
+So default to be nil, which will not include those invisible character as candidate.")
+
 
 (defun ace-jump-query-char-p ( query-char )
   "Check if the query char is valid,
