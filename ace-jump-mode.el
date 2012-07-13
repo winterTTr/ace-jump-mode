@@ -157,11 +157,14 @@ mode change via \"M-n\" or \"M-p\"")
 (defvar ace-jump-current-mode nil
   "Save the current mode")
 
-;(make-variable-buffer-local 'ace-jump-mode)
-;(make-variable-buffer-local 'ace-jump-background-overlay-list)
-;(make-variable-buffer-local 'ace-jump-search-tree)
-;(make-variable-buffer-local 'ace-jump-query-char)
-;(make-variable-buffer-local 'ace-jump-current-mode)
+(defvar ace-jump-recover-visual-area-list nil
+  "Save the ace jump aj-visual-area structure list.
+
+Sometimes, the different window may display the same buffer.  For
+this case, we need to create a indirect buffer for them to make
+ace jump overlay can work across the differnt window with the
+same buffer. When ace jump ends, we need to recover the window to
+its original buffer.")
 
 
 (defgroup ace-jump nil
@@ -217,7 +220,6 @@ The returned value is a list of `aj-position' record."
                      (let ((case-fold-search ace-jump-mode-case-fold))
                        (loop while (search-forward-regexp re-query-string end-point t)
                              collect (make-aj-position :offset (match-beginning 0)
-                                                       :buffer current-buffer
                                                        :window current-window))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
@@ -297,7 +299,8 @@ node and call LEAF-FUNC on each leaf node"
          (func-create-overlay (lambda (node)
                                 (let* ((p (car position-list))
                                        (offset (aj-position-offset p))
-                                       (b (aj-position-buffer p))
+                                       (w (aj-position-window p))
+                                       (b (window-buffer w))
                                        (ol (make-overlay offset (1+ offset) b)))
                                   ;; update leaf node to remember the ol
                                   (setf (cdr node) ol)
@@ -383,6 +386,47 @@ node and call LEAF-FUNC on each leaf node"
     (error "[AceJump] Invalid ace-jump-mode-scope, please check your configuration"))))
 
 
+(defun ace-jump-mode-make-indirect-buffer (visual-area-list)
+  "When the differnt window show the same buffer. The overlay
+cannot work for same buffer at the same time. So the indirect
+buffer need to create to make overlay can work correctly.
+
+VISUAL-AREA-LIST is aj-visual-area list. This function will
+return the structure list for those make a indirect buffer.
+
+Side affect: All the created indirect buffer will show in its
+relevant window."
+  (loop for va in visual-area-list
+        ;; check if the current visual-area (va) has the same buffer with
+        ;; the previous ones (vai)
+        if (loop for vai in visual-area-list
+                 ;; stop at itself, don't need to find the ones behind it (va)
+                 until (eq vai va)
+                 ;; if the buffer is same, return those(vai) before
+                 ;; it(va) so that we know the some visual area has
+                 ;; the same buffer with current one (va)
+                 if (eq (aj-visual-area-buffer va)
+                        (aj-visual-area-buffer vai))
+                 collect vai)
+        ;; if indeed the same one find, we need create an indirect buffer
+        ;; to current visual area(va)
+        collect (with-selected-window (aj-visual-area-window va)
+                  ;; store the orignal buffer
+                  (setf (aj-visual-area-recover-buffer va)
+                        (aj-visual-area-buffer va))
+                  ;; create indirect buffer to use as working buffer
+                  (setf (aj-visual-area-buffer va)
+                        ;; Side affect: change the buffer to indirect
+                        ;; buffer
+                        (clone-indirect-buffer nil nil))
+                  ;; update window to the indirect buffer
+                  (set-window-buffer-start-and-point
+                   (aj-visual-area-window va)
+                   (aj-visual-area-buffer va)
+                   (window-start))
+                  va)))
+
+
 (defun ace-jump-do( re-query-string )
   "The main function to start the AceJump mode.
 QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
@@ -410,6 +454,9 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (message "[AceJump] One candidate, move to it directly"))
      ;; more than one, we need to enter AceJump mode
      (t
+      ;; make indirect buffer for those windows that show the same buffer
+      (setq ace-jump-recover-visual-area-list
+            (ace-jump-mode-make-indirect-buffer visual-area-list))
       ;; create background for each visual area
       (setq ace-jump-background-overlay-list
             (loop for va in visual-area-list
@@ -594,10 +641,12 @@ You can constrol whether use the case sensitive via
         (ace-jump-delete-overlay-in-search-tree old-tree)))
      ;; if the node is leaf node, this is the final one
      ((eq (car node) 'leaf)
-      (push-mark (point) t)
-      (run-hooks 'ace-jump-mode-before-jump-hook)
-      (ace-jump-jump-to (overlay-get (cdr node) 'aj-data))
-      (ace-jump-done))
+      ;; need to save aj data, as `ace-jump-done' will clean it
+      (let ((aj-data (overlay-get (cdr node) 'aj-data)))
+        (push-mark (point) t)
+        (ace-jump-done)
+        (run-hooks 'ace-jump-mode-before-jump-hook)
+        (ace-jump-jump-to aj-data)))
      (t
       (ace-jump-done)
       (error "[AceJump] Internal error: tree node type is invalid")))))
@@ -620,6 +669,16 @@ You can constrol whether use the case sensitive via
         do (delete-overlay ol))
   (setq ace-jump-background-overlay-list nil)
 
+
+  ;; we clean the indirect buffer
+  (loop for va in ace-jump-recover-visual-area-list
+        do (with-selected-window (aj-visual-area-window va)
+             ;; recover display buffer
+             (set-window-buffer (aj-visual-area-window va)
+                                (aj-visual-area-recover-buffer va))
+             ;; kill indirect buffer
+             (kill-buffer (aj-visual-area-buffer va))))
+
   ;; delete overlays in search tree
   (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
   (setq ace-jump-search-tree nil)
@@ -634,9 +693,16 @@ You can constrol whether use the case sensitive via
 ;;;; ============================================
 ;;;; Utilities for ace-jump-mode
 ;;;; ============================================
-(defstruct aj-position offset buffer window)
 
-(defstruct aj-visual-area buffer window frame)
+;; aj-position do not need the 'buffer' property
+;;
+;; because aj-position only mark a position for the buffer in a
+;; specific window, it do not bind to a specific buffer. Sometimes, we
+;; need to create indirect buffer, so every time we want to know the
+;; buffer, use `window-buffer' to get it.
+(defstruct aj-position offset window)
+
+(defstruct aj-visual-area buffer window frame recover-buffer)
 
 (defstruct aj-queue head tail)
 
