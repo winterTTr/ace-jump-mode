@@ -420,10 +420,12 @@ relevant window."
                         ;; buffer
                         (clone-indirect-buffer nil nil))
                   ;; update window to the indirect buffer
-                  (set-window-buffer-start-and-point
-                   (aj-visual-area-window va)
-                   (aj-visual-area-buffer va)
-                   (window-start))
+                  (let ((ws (window-start)))
+                    (set-window-buffer (aj-visual-area-window va)
+                                       (aj-visual-area-buffer va))
+                    (set-window-start
+                     (aj-visual-area-window va)
+                     ws))
                   va)))
 
 
