@@ -7,6 +7,15 @@ across window and frame ) in emacs by using only **3 times key
 press**. Have a try and I am sure you will love it.
 
 
+What's new in 2.0 version?  --------------------------
+
+In 1.0 version, ace jump mode can only work in current window.
+
+However, this limitation has already been broken in 2.0 version.  With
+ace jump mode 2.0, you can jump to any position you wish across the
+bounder of window(c-x 2/3) and even frame(c-x 5).
+
+
 Is there a demo?
 ------------------------------------
 Here is a simple one for you to learn how to use ace jump, [Demo](http://dl.dropbox.com/u/3254819/AceJumpModeDemo/AceJumpDemo.htm)
