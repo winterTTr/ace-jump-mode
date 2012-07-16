@@ -7,7 +7,8 @@ across window and frame ) in emacs by using only **3 times key
 press**. Have a try and I am sure you will love it.
 
 
-What's new in 2.0 version?  --------------------------
+What's new in 2.0 version?
+--------------------------
 
 In 1.0 version, ace jump mode can only work in current window.
 
