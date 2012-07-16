@@ -27,20 +27,17 @@
 
 ;; What's this?
 ;;
-;; It is a minor mode for Emacs, enabling fast/direct cursor-moving in
-;; current view.
+;; It is a minor mode for Emacs. It can help you to move your cursor
+;; to ANY position in emacs by using only 3 times key press. 
 
-;; Where does minor mode come from ?
+;; Where does ace jump mode come from ?
 ;;
 ;; I firstly see such kind of moving style is in a vim plugin called
-;; EasyMotion. It really attract me a lot. EasyMotion provides a much
-;; simpler way to use some motions in vim. It takes the out of w or
-;; f{char} by highlighting all possible choices and allowing you to
-;; press one key to jump directly to the target. So I decide to write
-;; one for Emacs.
+;; EasyMotion. It really attract me a lot. So I decide to write
+;; one for Emacs and make it better.
 ;;
-;; So I must thank to :
-;;         Bartlomiej P. for his PreciseJump
+;; So I want to thank to :
+;;         Bartlomiej P.   for his PreciseJump
 ;;         Kim Silkebækken for his EasyMotion
 
 
@@ -48,26 +45,14 @@
 ;;
 ;; ace-jump-mode is an fast/direct cursor location minor mode. It will
 ;; create the N-Branch search tree internal and marks all the possible
-;; position with predefined keys in current view. Allowing you to move
-;; to the character/word/line almost directly.
-;;
-
-;; What is implemented now ?
-;;
-;; I do not implement everything from EasyMotion. Because I what to
-;; make AceJump as simple as possible, and you don’t even need to
-;; spend more than 2 minutes to learn how to use it. So now, there is
-;; only three sub-mode, which can help you to quick move to a specific
-;; character , word and (non-empty) line. Enjoy it~
-;;
-;; Of course, if you have any cool suggestion, feel free to tell me at
-;; anytime. I will put that to top of my TODO list :D
+;; position with predefined keys in within the whole emacs view.
+;; Allowing you to move to the character/word/line almost directly.
 ;;
 
 ;;; Usage
 ;;
 ;; Add the following code to your init file, of course you can select
-;; the key which you prefer to.
+;; the key that you prefer to.
 ;; ----------------------------------------------------------
 ;; (add-to-list 'load-path "which-folder-ace-jump-mode-file-in/")
 ;; (require 'ace-jump-mode)
@@ -77,6 +62,9 @@
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
 ;; ----------------------------------------------------------
 ;;
+
+;;; For more information
+;; Please access https://github.com/winterTTr/ace-jump-mode/wiki
 
 ;; Code goes here
 
@@ -99,11 +87,13 @@
 The default value is set to the same as `case-fold-search'.")
 
 (defvar ace-jump-mode-scope 'frame
-  "Define ace-jump-mode work scope.
-Now, there three kind of scope:
-1. 'frame : ace jump can work with buffers across the frame, this is also the default.
-2. 'window: ace jump will work with buffers within current window
-3. 'buffer: ace jump will only work on current buffer")
+  "Define what is the scope that ace-jump-mode works.
+
+Now, there three kind of values for this:
+1. 'frame : ace jump can work across any window and frame, this is also the default.
+2. 'window: ace jump will work within the windows in current frame.
+3. 'buffer: ace jump will only work on current window only.
+            This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-mode
@@ -143,19 +133,19 @@ for example, you only want to use lower case character:
 \(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ")
 
 
-;;; some buffer specific variable
+;;; some internal variable for ace jump
 (defvar ace-jump-mode nil
   "AceJump minor mode.")
 (defvar ace-jump-background-overlay-list nil
-  "Background overlay which will grey all the display")
+  "Background overlay which will grey all the display.")
 (defvar ace-jump-search-tree nil
   "N-branch Search tree. Every leaf node holds the overlay that
 is used to highlight the target positions.")
 (defvar ace-jump-query-char nil
-  "This is local to buffer, save the query char used between internal
-mode change via \"M-n\" or \"M-p\"")
+  "Save the query char used between internal mode.")
 (defvar ace-jump-current-mode nil
-  "Save the current mode")
+  "Save the current mode.
+See `ace-jump-mode-submode-list' for possible value.")
 
 (defvar ace-jump-recover-visual-area-list nil
   "Save the ace jump aj-visual-area structure list.
@@ -186,12 +176,6 @@ its original buffer.")
   "Face for foreground of AceJump motion"
   :group 'ace-jump)
 
-
-(defvar ace-jump-mode-hook nil
-  "Funciton(s) to call after start AceJump mode")
-
-(defvar ace-jump-mode-end-hook nil
-  "Funciton(s) to call after stop AceJump mode")
 
 (defvar ace-jump-mode-before-jump-hook nil
   "Function(s) to call just before moving the cursor to a selected match")
@@ -301,6 +285,7 @@ node and call LEAF-FUNC on each leaf node"
                                        (offset (aj-position-offset p))
                                        (w (aj-position-window p))
                                        (b (window-buffer w))
+                                       ;; create one char overlay
                                        (ol (make-overlay offset (1+ offset) b)))
                                   ;; update leaf node to remember the ol
                                   (setf (cdr node) ol)
@@ -322,7 +307,7 @@ node and call LEAF-FUNC on each leaf node"
     (ace-jump-tree-preorder-traverse tree func-delete-overlay)))
 
 (defun ace-jump-buffer-substring (pos)
-  "Get the char under the POS"
+  "Get the char under the POS, which is aj-position structure."
   (let ((w (aj-position-window pos))
         (offset (aj-position-offset pos)))
     (with-selected-window w
@@ -416,8 +401,6 @@ relevant window."
                         (aj-visual-area-buffer va))
                   ;; create indirect buffer to use as working buffer
                   (setf (aj-visual-area-buffer va)
-                        ;; Side affect: change the buffer to indirect
-                        ;; buffer
                         (clone-indirect-buffer nil nil))
                   ;; update window to the indirect buffer
                   (let ((ws (window-start)))
@@ -500,8 +483,6 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
               (define-key map (kbd "C-c C-c") 'ace-jump-quick-exchange)
               (define-key map [t] 'ace-jump-done)
               map))
-
-      (run-hooks 'ace-jump-mode-hook)
 
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
       (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))
@@ -686,7 +667,6 @@ You can constrol whether use the case sensitive via
   (setq ace-jump-search-tree nil)
 
   (setq overriding-local-map nil)
-  (run-hooks 'ace-jump-mode-end-hook)
 
   (remove-hook 'mouse-leave-buffer-hook 'ace-jump-done)
   (remove-hook 'kbd-macro-termination-hook 'ace-jump-done))
@@ -704,6 +684,8 @@ You can constrol whether use the case sensitive via
 ;; buffer, use `window-buffer' to get it.
 (defstruct aj-position offset window)
 
+;; a record for all the possible visual area
+;; a visual area is a window that showing some buffer in some frame.
 (defstruct aj-visual-area buffer window frame recover-buffer)
 
 (defstruct aj-queue head tail)
