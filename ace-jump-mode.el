@@ -86,13 +86,13 @@
 
 The default value is set to the same as `case-fold-search'.")
 
-(defvar ace-jump-mode-scope 'frame
+(defvar ace-jump-mode-scope 'global
   "Define what is the scope that ace-jump-mode works.
 
 Now, there three kind of values for this:
-1. 'frame : ace jump can work across any window and frame, this is also the default.
-2. 'window: ace jump will work within the windows in current frame.
-3. 'buffer: ace jump will only work on current window only.
+1. 'global : ace jump can work across any window and frame, this is also the default.
+2. 'frame  : ace jump will work for the all windows in current frame.
+3. 'window : ace jump will only work on current window only.
             This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-submode-list
@@ -351,18 +351,18 @@ node and call LEAF-FUNC on each leaf node"
 (defun ace-jump-list-visual-area()
   "Based on `ace-jump-mode-scope', search the possible buffers that is showing now."
   (cond
-   ((eq ace-jump-mode-scope 'frame)
+   ((eq ace-jump-mode-scope 'global)
     (loop for f in (frame-list)
           append (loop for w in (window-list f)
                        collect (make-aj-visual-area :buffer (window-buffer w)
                                                     :window w
                                                     :frame f))))
-   ((eq ace-jump-mode-scope 'window)
+   ((eq ace-jump-mode-scope 'frame)
     (loop for w in (window-list (selected-frame))
           collect (make-aj-visual-area :buffer (window-buffer w)
                                        :window w
                                        :frame (selected-frame))))
-   ((eq ace-jump-mode-scope 'buffer)
+   ((eq ace-jump-mode-scope 'window)
     (list 
      (make-aj-visual-area :buffer (current-buffer)
                           :window (selected-window)
