@@ -196,7 +196,7 @@ The returned value is a list of `aj-position' record."
   (loop for va in visual-area-list
         append (let* ((current-window (aj-visual-area-window va))
                       (start-point (window-start current-window))
-                      (end-point   (window-end   current-window))
+                      (end-point   (window-end   current-window t))
                       (current-buffer (window-buffer current-window)))
                  (with-selected-window current-window
                    (save-excursion
