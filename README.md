@@ -17,9 +17,23 @@ ace jump mode 2.0, you can jump to any position you wish across the
 bounder of window(c-x 2/3) and even frame(c-x 5).
 
 
-Is there a demo?
+Is there a demo to show the usage?
 ------------------------------------
 Here is a simple one for you to learn how to use ace jump, [Demo](http://dl.dropbox.com/u/3254819/AceJumpModeDemo/AceJumpDemo.htm)
+
+Usage: 
+
+"C-c SPC" ==>  ace-jump-word-mode
+
+>enter first character of a word, select the highlighted key to move to it.
+
+"C-u C-c SPC" ==>  ace-jump-char-mode
+
+>enter a character for query, select the highlighted key to move to it.
+
+"C-u C-u C-c SPC" ==>  ace-jump-line-mode
+
+>each non-empty line will be marked, select the highlighted key to move to it.
 
 
 
@@ -34,22 +48,6 @@ How to install it?
     (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
     ;;If you use evil
     (define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
-
-
-How to use it?
---------------
-"C-c SPC" ==>  ace-jump-word-mode
-
->enter first character of a word, select the highlighted key to move to it.
-
-"C-u C-c SPC" ==>  ace-jump-char-mode
-
->enter a character for query, select the highlighted key to move to it.
-
-"C-u C-u C-c SPC" ==>  ace-jump-line-mode
-
->each non-empty line will be marked, select the highlighted key to move to it.
-
 
 
 I want to know more about customized configuration?
