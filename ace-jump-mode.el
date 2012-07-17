@@ -86,6 +86,13 @@
 
 The default value is set to the same as `case-fold-search'.")
 
+
+(defvar ace-jump-mode-gray-background t
+  "By default, when there is more than one candidate, the ace
+jump mode will gray the background and then mark the possible
+candidate position. Set this to nil means do not gray
+background.")
+
 (defvar ace-jump-mode-scope 'global
   "Define what is the scope that ace-jump-mode works.
 
@@ -443,15 +450,16 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (setq ace-jump-recover-visual-area-list
             (ace-jump-mode-make-indirect-buffer visual-area-list))
       ;; create background for each visual area
-      (setq ace-jump-background-overlay-list
-            (loop for va in visual-area-list
-                  collect (let* ((w (aj-visual-area-window va))
-                                 (b (aj-visual-area-buffer va))
-                                 (ol (make-overlay (window-start w)
-                                                   (window-end w)
-                                                   b)))
-                            (overlay-put ol 'face 'ace-jump-face-background)
-                            ol)))
+      (if ace-jump-mode-gray-background
+          (setq ace-jump-background-overlay-list
+                (loop for va in visual-area-list
+                      collect (let* ((w (aj-visual-area-window va))
+                                     (b (aj-visual-area-buffer va))
+                                     (ol (make-overlay (window-start w)
+                                                       (window-end w)
+                                                       b)))
+                                (overlay-put ol 'face 'ace-jump-face-background)
+                                ol))))
 
       ;; construct search tree and populate overlay into tree
       (setq ace-jump-search-tree
