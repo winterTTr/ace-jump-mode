@@ -102,6 +102,14 @@ Now, there three kind of values for this:
 3. 'window : ace jump will only work on current window only.
             This is the same behavior for 1.0 version.")
 
+(defvar ace-jump-mode-detect-punc t
+  "When this is non-nil, the ace jump word mode will detect the
+char that is not alpha or number. Then, if the query char is a
+printable punctuaction, we will use char mode to start the ace
+jump mode. If it is nil, an error will come up when
+non-alpha-number is given under word mode.")
+
+
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-mode
     ace-jump-char-mode
@@ -187,10 +195,39 @@ its original buffer.")
 (defvar ace-jump-mode-before-jump-hook nil
   "Function(s) to call just before moving the cursor to a selected match")
 
-(defun ace-jump-query-char-p ( query-char )
-  "Check if the query char is valid,
-we can only allow to query printable ascii char"
-  (and (> query-char #x1F) (< query-char #x7F)) )
+(defun ace-jump-char-category ( query-char )
+  "Detect the type of the char.
+For the ascii table, refer to http://www.asciitable.com/
+
+There is four possible return value:
+1. 'digit: the number character
+2. 'alpha: A-Z and a-z
+3. 'punc : all the printable punctuaiton
+4. 'other: all the others"
+  (cond
+   ;; digit
+   ((and (>= query-char #x30) (<= query-char #x39))
+    'digit)
+   ((or
+     ;; capital letter
+     (and (>= query-char #x41) (<= query-char #x5A))
+     ;; lowercase letter
+     (and (>= query-char #x61) (<= query-char #x7A)))
+    'alpha)
+   ((or
+     ;; tab
+     (equal query-char #x9)
+     ;; punc before digit
+     (and (>= query-char #x20) (<= query-char #x2F))
+     ;; punc after digit before capital letter
+     (and (>= query-char #x3A) (<= query-char #x40))
+     ;; punc after capital letter before lowercase letter
+     (and (>= query-char #x5B) (<= query-char #x60))
+     ;; punc after lowercase letter
+     (and (>= query-char #x7B) (<= query-char #x7E)))
+    'punc)
+   (t
+    'other)))
 
 (defun ace-jump-search-candidate( re-query-string visual-area-list)
   "Search the RE-QUERY-STRING in current view, and return the candidate position list.
@@ -209,9 +246,20 @@ The returned value is a list of `aj-position' record."
                    (save-excursion
                      (goto-char start-point)
                      (let ((case-fold-search ace-jump-mode-case-fold))
-                       (loop while (search-forward-regexp re-query-string end-point t)
-                             collect (make-aj-position :offset (match-beginning 0)
-                                                       :window current-window))))))))
+                       (loop while (re-search-forward re-query-string nil t)
+                             until (or
+                                    (> (point) end-point)
+                                    (eobp))
+                             collect (let* ((mb (match-beginning 0))
+                                            (pos (make-aj-position :offset mb
+                                                                   :window current-window)))
+                                       ;; when we use "^" to search line mode,
+                                       ;; re-search-backward will not move one
+                                       ;; char after search success. We need to
+                                       ;; help it to move forward
+                                       (if (string-equal re-query-string "^")
+                                           (goto-char (1+ mb)))
+                                       pos))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -334,14 +382,19 @@ node and call LEAF-FUNC on each leaf node"
                ol
                'display
                (concat (make-string 1 key)
-                       ;; when tab, we use more space to prevent screen
-                       ;; from messing up
-                       (let ((pos (overlay-get ol 'aj-data)))
-                         (if (string=
-                              (ace-jump-buffer-substring pos)
-                              "\t")
-                             (make-string (1- tab-width) ? )
-                           ""))))))))
+                       (let* ((pos (overlay-get ol 'aj-data))
+                              (subs (ace-jump-buffer-substring pos)))
+                         (cond
+                          ;; when tab, we use more space to prevent screen
+                          ;; from messing up
+                          ((string-equal subs "\t")
+                           (make-string (1- tab-width) ? ))
+                          ;; when enter, we need to add one more enter
+                          ;; to make the screen not change
+                          ((string-equal subs "\n")
+                           "\n")
+                          (t
+                           "")))))))))
     (loop for k in keys
           for n in (cdr tree)
           do (progn
@@ -513,20 +566,14 @@ word-mode and char-mode"
         ;; ace-jump-done will clean the query char, so we need to save it
         (let ((query-char ace-jump-query-char))
           (ace-jump-done)
-          ;; restore the flag
-          (setq ace-jump-query-char query-char)
-          (setq ace-jump-current-mode 'ace-jump-word-mode)
-          (ace-jump-do (concat "\\b"
-                               (regexp-quote (make-string 1 query-char)))))))
+          (ace-jump-word-mode query-char))))
    ((eq ace-jump-current-mode 'ace-jump-word-mode)
     (if ace-jump-query-char
         ;; ace-jump-done will clean the query char, so we need to save it
         (let ((query-char ace-jump-query-char))
           (ace-jump-done)
           ;; restore the flag
-          (setq ace-jump-query-char query-char)
-          (setq ace-jump-current-mode 'ace-jump-char-mode)
-          (ace-jump-do (regexp-quote (make-string 1 query-char))))))
+          (ace-jump-char-mode query-char))))
    ((eq ace-jump-current-mode 'ace-jump-line-mode)
     nil)
    (t
@@ -538,12 +585,14 @@ word-mode and char-mode"
 (defun ace-jump-char-mode (query-char)
   "AceJump char mode"
   (interactive (list (read-char "Query Char:")))
-  (if (ace-jump-query-char-p query-char)
-      (progn
-        (setq ace-jump-query-char query-char)
-        (setq ace-jump-current-mode 'ace-jump-char-mode)
-        (ace-jump-do (regexp-quote (make-string 1 query-char))))
-    (error "[AceJump] Non-printable char")))
+  
+  (if (eq (ace-jump-char-category query-char) 'other)
+    (error "[AceJump] Non-printable character"))
+
+  ;; others : digit , alpha, punc
+  (setq ace-jump-query-char query-char)
+  (setq ace-jump-current-mode 'ace-jump-char-mode)
+  (ace-jump-do (regexp-quote (make-string 1 query-char))))
 
 (defun ace-jump-word-mode (head-char)
   "AceJump word mode.
@@ -555,14 +604,25 @@ buffer."
                        nil)))
   (cond
    ((null head-char)
-    (ace-jump-do "\\b\\sw"))
-   ((ace-jump-query-char-p head-char)
+    ;; \<  - start of word
+    ;; \sw - word constituent
+    (ace-jump-do "\\<\\sw"))
+   ((memq (ace-jump-char-category head-char)
+          '(digit alpha))
     (setq ace-jump-query-char head-char)
     (setq ace-jump-current-mode 'ace-jump-word-mode)
-    (ace-jump-do (concat "\\b"
-                         (regexp-quote (make-string 1 head-char)))))
+    (ace-jump-do (concat "\\<" (make-string 1 head-char))))
+   ((eq (ace-jump-char-category head-char)
+        'punc)
+    ;; we do not query punctuation under word mode
+    (if (null ace-jump-mode-detect-punc)
+        (error "[AceJump] Not a valid word constituent"))
+    ;; we will use char mode to continue search
+    (setq ace-jump-query-char head-char)
+    (setq ace-jump-current-mode 'ace-jump-char-mode)
+    (ace-jump-do (regexp-quote (make-string 1 head-char))))
    (t
-    (error "[AceJump] Non-printable char"))))
+    (error "[AceJump] Non-printable character"))))
 
 
 (defun ace-jump-line-mode ()
@@ -570,7 +630,7 @@ buffer."
 Marked each no empty line and move there"
   (interactive)
   (setq ace-jump-current-mode 'ace-jump-line-mode)
-  (ace-jump-do "^."))
+  (ace-jump-do "^"))
 
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
