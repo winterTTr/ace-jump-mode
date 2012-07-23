@@ -229,7 +229,7 @@ There is four possible return value:
    (t
     'other)))
 
-(defun ace-jump-search-candidate( re-query-string visual-area-list)
+(defun ace-jump-search-candidate (re-query-string visual-area-list)
   "Search the RE-QUERY-STRING in current view, and return the candidate position list.
 RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
 
@@ -240,8 +240,7 @@ The returned value is a list of `aj-position' record."
   (loop for va in visual-area-list
         append (let* ((current-window (aj-visual-area-window va))
                       (start-point (window-start current-window))
-                      (end-point   (window-end   current-window t))
-                      (current-buffer (window-buffer current-window)))
+                      (end-point   (window-end   current-window t)))
                  (with-selected-window current-window
                    (save-excursion
                      (goto-char start-point)
@@ -252,11 +251,12 @@ The returned value is a list of `aj-position' record."
                                     (eobp))
                              collect (let* ((mb (match-beginning 0))
                                             (pos (make-aj-position :offset mb
-                                                                   :window current-window)))
+                                                                   :visual-area va)))
                                        ;; when we use "^" to search line mode,
                                        ;; re-search-backward will not move one
-                                       ;; char after search success. We need to
-                                       ;; help it to move forward
+                                       ;; char after search success, as line
+                                       ;; begin is not a valid visible char.
+                                       ;; We need to help it to move forward.
                                        (if (string-equal re-query-string "^")
                                            (goto-char (1+ mb)))
                                        pos))))))))
@@ -338,8 +338,9 @@ node and call LEAF-FUNC on each leaf node"
          (func-create-overlay (lambda (node)
                                 (let* ((p (car position-list))
                                        (offset (aj-position-offset p))
-                                       (w (aj-position-window p))
-                                       (b (window-buffer w))
+                                       (va (aj-position-visual-area p))
+                                       (w (aj-visual-area-window va))
+                                       (b (aj-visual-area-buffer va))
                                        ;; create one char overlay
                                        (ol (make-overlay offset (1+ offset) b)))
                                   ;; update leaf node to remember the ol
@@ -363,10 +364,11 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-buffer-substring (pos)
   "Get the char under the POS, which is aj-position structure."
-  (let ((w (aj-position-window pos))
-        (offset (aj-position-offset pos)))
+  (let* ((va (aj-position-visual-area pos))
+         (w (aj-visual-area-window va))
+         (offset (aj-position-offset pos)))
     (with-selected-window w
-        (buffer-substring offset (1+ offset)))))
+      (buffer-substring offset (1+ offset)))))
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
   "Update overlay 'display property using each name in keys"
@@ -551,10 +553,27 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
 (defun ace-jump-jump-to (position)
   "Jump to the POSITION, which is a `aj-position' structure storing the position information"
-  (let ((w (aj-position-window position)))
-    (select-frame-set-input-focus (window-frame w))
-    (select-window w)
-    (goto-char (aj-position-offset position))))
+  (let* ((va (aj-position-visual-area position))
+         (offset (aj-position-offset position))
+         (frame (aj-visual-area-frame va))
+         (window (aj-visual-area-window va))
+         (buffer (aj-visual-area-buffer va)))
+    ;; focus to the frame
+    (if (eq frame (selected-frame))
+        nil
+      (select-frame-set-input-focus (window-frame window)))
+    
+    ;; select the correct window
+    (if (eq window (selected-window))
+        nil
+      (select-window window))
+    
+    ;; swith to buffer
+    (if (eq buffer (window-buffer window))
+        nil
+      (switch-to-buffer buffer))
+    ;; move to correct position
+    (goto-char offset)))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
@@ -724,11 +743,17 @@ You can constrol whether use the case sensitive via
   ;; we clean the indirect buffer
   (loop for va in ace-jump-recover-visual-area-list
         do (with-selected-window (aj-visual-area-window va)
-             ;; recover display buffer
-             (set-window-buffer (aj-visual-area-window va)
-                                (aj-visual-area-recover-buffer va))
-             ;; kill indirect buffer
-             (kill-buffer (aj-visual-area-buffer va))))
+             (let ((fake-buffer (aj-visual-area-buffer va))
+                   (original-buffer (aj-visual-area-recover-buffer va)))
+               ;; recover display buffer
+               (set-window-buffer (aj-visual-area-window va)
+                                  original-buffer)
+               ;; update visual area, which we need to use it to do the
+               ;; final jump, and as well, save in history
+               (setf (aj-visual-area-buffer va) original-buffer)
+               (setf (aj-visual-area-recover-buffer va) nil)
+               ;; kill indirect buffer
+               (kill-buffer fake-buffer))))
 
   ;; delete overlays in search tree
   (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
@@ -744,13 +769,11 @@ You can constrol whether use the case sensitive via
 ;;;; Utilities for ace-jump-mode
 ;;;; ============================================
 
-;; aj-position do not need the 'buffer' property
+;; aj-position
 ;;
-;; because aj-position only mark a position for the buffer in a
-;; specific window, it do not bind to a specific buffer. Sometimes, we
-;; need to create indirect buffer, so every time we want to know the
-;; buffer, use `window-buffer' to get it.
-(defstruct aj-position offset window)
+;; make a position in a visual area
+(defstruct aj-position offset visual-area)
+
 
 ;; a record for all the possible visual area
 ;; a visual area is a window that showing some buffer in some frame.
