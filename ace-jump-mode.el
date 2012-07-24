@@ -86,6 +86,12 @@
 
 The default value is set to the same as `case-fold-search'.")
 
+(defvar ace-jump-mode-position-ring nil
+  "The list that is used to store the history for jump back.")
+
+(defvar ace-jump-mode-position-ring-max 100
+  "The max length of `ace-jump-mode-position-ring'")
+
 
 (defvar ace-jump-mode-gray-background t
   "By default, when there is more than one candidate, the ace
@@ -496,6 +502,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
      ;; we only find one, so move to it directly
      ((eq (cdr candidate-list) nil)
       (push-mark (point) t)
+      (ace-jump-push-position)
       (run-hooks 'ace-jump-mode-before-jump-hook)
       (ace-jump-jump-to (car candidate-list))
       (message "[AceJump] One candidate, move to it directly"))
@@ -559,21 +566,50 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
          (window (aj-visual-area-window va))
          (buffer (aj-visual-area-buffer va)))
     ;; focus to the frame
-    (if (eq frame (selected-frame))
-        nil
-      (select-frame-set-input-focus (window-frame window)))
+    (if (and (frame-live-p frame)
+             (not (eq frame (selected-frame))))
+        (select-frame-set-input-focus (window-frame window)))
     
     ;; select the correct window
-    (if (eq window (selected-window))
-        nil
-      (select-window window))
+    (if (and (window-live-p window)
+             (not (eq window (selected-window))))
+        (select-window window))
     
     ;; swith to buffer
-    (if (eq buffer (window-buffer window))
-        nil
-      (switch-to-buffer buffer))
+    (if (and (buffer-live-p buffer)
+             (not (eq buffer (window-buffer window))))
+        (switch-to-buffer buffer))
     ;; move to correct position
-    (goto-char offset)))
+
+    (if (and (buffer-live-p buffer)
+             (eq (current-buffer) buffer))
+        (goto-char offset))))
+
+(defun ace-jump-push-position ()
+  "Push the current position information onto the `ace-jump-mode-position-ring'."
+  (let ((pos (make-aj-position :offset (point)
+                               :visual-area (make-aj-visual-area :buffer (current-buffer)
+                                                                 :window (selected-window)
+                                                                 :frame  (selected-frame)))))
+    (setq ace-jump-mode-position-ring (cons pos ace-jump-mode-position-ring)))
+  (if (> (length ace-jump-mode-position-ring) ace-jump-mode-position-ring-max)
+      (setcdr (nthcdr (1- ace-jump-mode-position-ring-max)) nil)))
+
+
+(defun ace-jump-mode-pop-position ()
+  "Pop up a postion from `ace-jump-mode-position-ring', and jump back to that position"
+  (interactive)
+  ;; we jump over the killed buffer position
+  (while (and ace-jump-mode-position-ring
+              (not (buffer-live-p (aj-visual-area-buffer
+                                   (aj-position-visual-area
+                                    (car ace-jump-mode-position-ring))))))
+    (setq ace-jump-mode-position-ring (cdr ace-jump-mode-position-ring)))
+    
+  (if (null ace-jump-mode-position-ring)
+      (message "[AceJump] No more history")
+    (ace-jump-jump-to (car ace-jump-mode-position-ring))
+    (setq ace-jump-mode-position-ring (cdr ace-jump-mode-position-ring))))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
@@ -713,8 +749,9 @@ You can constrol whether use the case sensitive via
      ((eq (car node) 'leaf)
       ;; need to save aj data, as `ace-jump-done' will clean it
       (let ((aj-data (overlay-get (cdr node) 'aj-data)))
-        (push-mark (point) t)
         (ace-jump-done)
+        (push-mark (point) t)
+        (ace-jump-push-position)
         (run-hooks 'ace-jump-mode-before-jump-hook)
         (ace-jump-jump-to aj-data)))
      (t
