@@ -86,11 +86,11 @@
 
 The default value is set to the same as `case-fold-search'.")
 
-(defvar ace-jump-mode-position-ring nil
+(defvar ace-jump-mode-mark-ring nil
   "The list that is used to store the history for jump back.")
 
-(defvar ace-jump-mode-position-ring-max 100
-  "The max length of `ace-jump-mode-position-ring'")
+(defvar ace-jump-mode-mark-ring-max 100
+  "The max length of `ace-jump-mode-mark-ring'")
 
 
 (defvar ace-jump-mode-gray-background t
@@ -370,8 +370,7 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-buffer-substring (pos)
   "Get the char under the POS, which is aj-position structure."
-  (let* ((va (aj-position-visual-area pos))
-         (w (aj-visual-area-window va))
+  (let* ((w (aj-position-window pos))
          (offset (aj-position-offset pos)))
     (with-selected-window w
       (buffer-substring offset (1+ offset)))))
@@ -501,8 +500,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((eq (cdr candidate-list) nil)
-      (push-mark (point) t)
-      (ace-jump-push-position)
+      (ace-jump-push-mark)
       (run-hooks 'ace-jump-mode-before-jump-hook)
       (ace-jump-jump-to (car candidate-list))
       (message "[AceJump] One candidate, move to it directly"))
@@ -560,56 +558,59 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
 (defun ace-jump-jump-to (position)
   "Jump to the POSITION, which is a `aj-position' structure storing the position information"
-  (let* ((va (aj-position-visual-area position))
-         (offset (aj-position-offset position))
-         (frame (aj-visual-area-frame va))
-         (window (aj-visual-area-window va))
-         (buffer (aj-visual-area-buffer va)))
-    ;; focus to the frame
-    (if (and (frame-live-p frame)
-             (not (eq frame (selected-frame))))
-        (select-frame-set-input-focus (window-frame window)))
-    
-    ;; select the correct window
-    (if (and (window-live-p window)
-             (not (eq window (selected-window))))
-        (select-window window))
-    
-    ;; swith to buffer
-    (if (and (buffer-live-p buffer)
-             (not (eq buffer (window-buffer window))))
-        (switch-to-buffer buffer))
-    ;; move to correct position
+  (let ((offset (aj-position-offset position))
+        (frame (aj-position-frame position))
+        (window (aj-position-window position))
+        (buffer (aj-position-buffer position)))
+        ;; focus to the frame
+        (if (and (frame-live-p frame)
+                 (not (eq frame (selected-frame))))
+            (select-frame-set-input-focus (window-frame window)))
+        
+        ;; select the correct window
+        (if (and (window-live-p window)
+                 (not (eq window (selected-window))))
+            (select-window window))
+        
+        ;; swith to buffer
+        (if (and (buffer-live-p buffer)
+                 (not (eq buffer (window-buffer window))))
+            (switch-to-buffer buffer))
+        ;; move to correct position
 
-    (if (and (buffer-live-p buffer)
-             (eq (current-buffer) buffer))
-        (goto-char offset))))
+        (if (and (buffer-live-p buffer)
+                 (eq (current-buffer) buffer))
+            (goto-char offset))))
 
-(defun ace-jump-push-position ()
-  "Push the current position information onto the `ace-jump-mode-position-ring'."
+(defun ace-jump-push-mark ()
+  "Push the current position information onto the `ace-jump-mode-mark-ring'."
+  ;; add mark to the emacs basic push mark
+  (push-mark (point) t)
+  ;; we also push the mark on the `ace-jump-mode-mark-ring', which has
+  ;; more information for better jump back
   (let ((pos (make-aj-position :offset (point)
                                :visual-area (make-aj-visual-area :buffer (current-buffer)
                                                                  :window (selected-window)
                                                                  :frame  (selected-frame)))))
-    (setq ace-jump-mode-position-ring (cons pos ace-jump-mode-position-ring)))
-  (if (> (length ace-jump-mode-position-ring) ace-jump-mode-position-ring-max)
-      (setcdr (nthcdr (1- ace-jump-mode-position-ring-max)) nil)))
+    (setq ace-jump-mode-mark-ring (cons pos ace-jump-mode-mark-ring)))
+  ;; when exeed the max count, discard the last one
+  (if (> (length ace-jump-mode-mark-ring) ace-jump-mode-mark-ring-max)
+      (setcdr (nthcdr (1- ace-jump-mode-mark-ring-max)) nil)))
 
 
-(defun ace-jump-mode-pop-position ()
-  "Pop up a postion from `ace-jump-mode-position-ring', and jump back to that position"
+(defun ace-jump-mode-pop-mark ()
+  "Pop up a postion from `ace-jump-mode-mark-ring', and jump back to that position"
   (interactive)
   ;; we jump over the killed buffer position
-  (while (and ace-jump-mode-position-ring
-              (not (buffer-live-p (aj-visual-area-buffer
-                                   (aj-position-visual-area
-                                    (car ace-jump-mode-position-ring))))))
-    (setq ace-jump-mode-position-ring (cdr ace-jump-mode-position-ring)))
+  (while (and ace-jump-mode-mark-ring
+              (not (buffer-live-p (aj-position-buffer
+                                   (car ace-jump-mode-mark-ring)))))
+    (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
     
-  (if (null ace-jump-mode-position-ring)
+  (if (null ace-jump-mode-mark-ring)
       (message "[AceJump] No more history")
-    (ace-jump-jump-to (car ace-jump-mode-position-ring))
-    (setq ace-jump-mode-position-ring (cdr ace-jump-mode-position-ring))))
+    (ace-jump-jump-to (car ace-jump-mode-mark-ring))
+    (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring))))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
@@ -750,8 +751,7 @@ You can constrol whether use the case sensitive via
       ;; need to save aj data, as `ace-jump-done' will clean it
       (let ((aj-data (overlay-get (cdr node) 'aj-data)))
         (ace-jump-done)
-        (push-mark (point) t)
-        (ace-jump-push-position)
+        (ace-jump-push-mark)
         (run-hooks 'ace-jump-mode-before-jump-hook)
         (ace-jump-jump-to aj-data)))
      (t
@@ -801,6 +801,51 @@ You can constrol whether use the case sensitive via
   (remove-hook 'mouse-leave-buffer-hook 'ace-jump-done)
   (remove-hook 'kbd-macro-termination-hook 'ace-jump-done))
 
+;;;; ============================================
+;;;; advice to sync emacs mark ring
+;;;; ============================================
+
+(defun ace-jump-filter-mark-from-ring (mark ring)
+  "We will filter(remove) all the element in the RING, which has
+the same position and same buffer with MARK.
+
+This function will not modify RING, only returned the filted ring."
+  (let ((mb (marker-buffer mark))
+        (mp (marker-position mark)))
+    ;; all the same position in the same buffer will be discard
+    (loop for e in ring
+          ;; not the same buffer
+          if (or (not (eq (aj-position-buffer e) mb))
+                 ;; not the same position
+                 (not (equal (aj-position-offset e) mp)))
+          collect ajm)))
+
+
+(defadvice pop-mark (before ace-jump-pop-mark-advice)
+  "When `pop-mark' is called to jump back, this advice will sync the mark ring.
+Remove the position from `ace-jump-mode-mark-ring'."
+  (if mark-ring
+      (setq ace-jump-mode-mark-ring
+            (ace-jump-filter-mark-from-ring (car mark-ring)
+                                            ace-jump-mode-mark-ring))))
+            
+
+(defadvice pop-global-mark (before ace-jump-pop-global-mark-advice)
+  "When `pop-global-mark' is called to jump back, this advice will sync the mark ring.
+Remove the position from `ace-jump-mode-mark-ring'."
+  (interactive)
+  ;; find the one that will be jump to
+  (let ((index global-mark-ring))
+    ;; refer to the implementation of `pop-global-mark'
+    (while (and index (not (marker-buffer (car index))))
+      (setq index (cdr index)))
+    (if (null index)
+        nil
+      ;; find the mark
+      (setq ace-jump-mode-mark-ring
+            (ace-jump-filter-mark-from-ring (car index)
+                                            ace-jump-mode-mark-ring)))))
+
 
 ;;;; ============================================
 ;;;; Utilities for ace-jump-mode
@@ -811,6 +856,21 @@ You can constrol whether use the case sensitive via
 ;; make a position in a visual area
 (defstruct aj-position offset visual-area)
 
+(defmacro aj-position-buffer (aj-pos)
+  "Get the buffer object from `aj-position'."
+  `(aj-visual-area-buffer (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-window (aj-pos)
+  "Get the window object from `aj-position'."
+  `(aj-visual-area-window (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-frame (aj-pos)
+  "Get the frame object from `aj-position'."
+  `(aj-visual-area-frame (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-recover-buffer (aj-pos)
+  "Get the recover-buffer object from `aj-position'."
+  `(aj-visual-area-recover-buffer (aj-position-visual-area ,aj-pos)))
 
 ;; a record for all the possible visual area
 ;; a visual area is a window that showing some buffer in some frame.
