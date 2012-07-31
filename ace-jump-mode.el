@@ -176,7 +176,16 @@ this case, we need to create a indirect buffer for them to make
 ace jump overlay can work across the differnt window with the
 same buffer. When ace jump ends, we need to recover the window to
 its original buffer.")
+(defvar ace-jump-sync-emacs-mark-ring nil
+  "When this variable is not-nil, everytime `ace-jump-mode-pop-mark' is called,
+ace jump will try to remove the same mark from buffer local mark
+ring and global-mark-ring, which help you to sync the mark
+information between emacs and ace jump.
 
+Note, never try to set this variable manually, this is for ace
+jump internal use.  If you want to change it, use
+`ace-jump-mode-enable-mark-sync' or
+`ace-jump-mode-disable-mark-sync'.")
 
 (defgroup ace-jump nil
   "ace jump group"
@@ -608,9 +617,45 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
     (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
     
   (if (null ace-jump-mode-mark-ring)
-      (message "[AceJump] No more history")
-    (ace-jump-jump-to (car ace-jump-mode-mark-ring))
-    (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring))))
+      ;; no valid history exist
+      (error "[AceJump] No more history"))
+
+  (if ace-jump-sync-emacs-mark-ring
+      (let ((p (car ace-jump-mode-mark-ring)))
+        ;; if we jump back in the current buffer,
+        ;; ace-jump-mode-pop-mark works as what pop-to-mark-command
+        ;; does. no matter the current marker exists at the
+        ;; destination or not, the pop-to-mark-command will always :
+        ;; 1. move cursor to the marker in the current buffer
+        ;; 2. pop one mark from ring, and move the mark to that position
+        ;; We just follow this rule, but use ace jump position to jump
+        ;; for the step 1. So only need to sync the step 2 as pop-mark
+        ;; we cannot call pop-mark directly here, as there may have advice on it
+        (if (eq (current-buffer) (aj-position-buffer p))
+            (progn
+              (when mark-ring
+                (setq mark-ring (nconc mark-ring (list (copy-marker (mark-marker)))))
+                (set-marker (mark-marker) (+ 0 (car mark-ring)) (current-buffer))
+                (move-marker (car mark-ring) nil)
+                (setq mark-ring (cdr mark-ring)))
+              (deactivate-mark))
+
+          ;; when we jump back to another buffer, which should
+          ;; pop-global-mark does.
+
+          ;; Pop entries which refer to non-existent buffers.
+          (while (and global-mark-ring (not (marker-buffer (car global-mark-ring))))
+            (setq global-mark-ring (cdr global-mark-ring)))
+
+          ;; if we are jump back to the same buffer as global mark ring marked
+          (if (and global-mark-ring
+                   (eq (marker-buffer (car global-mark-ring))
+                       (aj-position-buffer p)))
+              ;; remove that one
+              (setq global-mark-ring (cdr global-mark-ring))))))
+  
+  (ace-jump-jump-to (car ace-jump-mode-mark-ring))
+  (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
@@ -806,19 +851,45 @@ You can constrol whether use the case sensitive via
 ;;;; ============================================
 
 (defun ace-jump-filter-mark-from-ring (mark ring)
-  "We will filter(remove) all the element in the RING, which has
-the same position and same buffer with MARK.
+  "We will filter(remove) the first element in the RING, which
+has the same position and same buffer with MARK. The RING need to
+be a aj-position structure list, and MARK need to be a emacs
+marker object.
 
 This function will not modify RING, only returned the filted ring."
   (let ((mb (marker-buffer mark))
-        (mp (marker-position mark)))
-    ;; all the same position in the same buffer will be discard
+        (mp (marker-position mark))
+        find-one)
+    ;; the first one with same position in the same buffer will be discard
     (loop for e in ring
-          ;; not the same buffer
-          if (or (not (eq (aj-position-buffer e) mb))
-                 ;; not the same position
-                 (not (equal (aj-position-offset e) mp)))
-          collect ajm)))
+          ;; already find the first
+          if (or find-one
+                 ;; we find the one with same buffer and same position
+                 ;; so we will NOT want it
+                 (not (setq find-one
+                            (and (eq (aj-position-buffer e) mb)
+                                 (equal (aj-position-offset e) mp)))))
+          collect e)))
+
+(defun ace-jump-filter-pos-from-ring (pos ring)
+  "Remove the first element in the RING, which has the same
+position and buffer with POS. The RING should be a emacs marker
+object list, and pos is a aj-position object.
+
+This funciton will not modify RING, only returned the filtered ring."
+  (let ((pb (aj-position-buffer pos))
+        (po (aj-position-offset pos))
+        find-one)
+    ;; the first one with same position in the same buffer will be discard
+    (loop for m in ring
+          ;; already find the first
+          if (or find-one
+                 ;; we find the one with same buffer and same position
+                 ;; so we will NOT want it
+                 (not (setq find-one
+                            (and (eq (marker-buffer m) pb)
+                                 (equal (marker-position m) po)))))
+          collect m)))
 
 
 (defadvice pop-mark (before ace-jump-pop-mark-advice)
@@ -839,12 +910,43 @@ Remove the position from `ace-jump-mode-mark-ring'."
     ;; refer to the implementation of `pop-global-mark'
     (while (and index (not (marker-buffer (car index))))
       (setq index (cdr index)))
-    (if (null index)
-        nil
-      ;; find the mark
-      (setq ace-jump-mode-mark-ring
-            (ace-jump-filter-mark-from-ring (car index)
-                                            ace-jump-mode-mark-ring)))))
+    (if index
+        ;; find the mark
+        (setq ace-jump-mode-mark-ring
+              (ace-jump-filter-mark-from-ring (car index)
+                                              ace-jump-mode-mark-ring)))))
+
+(defun ace-jump-mode-enable-mark-sync ()
+  "Enable the sync funciton between ace jump mode mark ring and emacs mark ring.
+
+1. This function will enable the advice which activate on
+`pop-mark' and `pop-global-mark'. These advice will remove the
+same marker from `ace-jump-mode-mark-ring' when user use
+`pop-mark' or `global-pop-mark' to jump back. 
+
+2. Set variable `ace-jump-sync-emacs-mark-ring' to t, which will
+sync mark information with emacs mark ring. "
+  (ad-enable-advice 'pop-mark 'before 'ace-jump-pop-mark-advice)
+  (ad-activate 'pop-mark)
+  (ad-enable-advice 'pop-global-mark 'before 'ace-jump-pop-global-mark-advice)
+  (ad-activate 'pop-global-mark)
+  (setq ace-jump-sync-emacs-mark-ring t))
+
+(defun ace-jump-mode-disable-mark-sync ()
+  "Disable the sync funciton between ace jump mode mark ring and emacs mark ring.
+
+1. This function will diable the advice which activate on
+`pop-mark' and `pop-global-mark'. These advice will remove the
+same marker from `ace-jump-mode-mark-ring' when user use
+`pop-mark' or `global-pop-mark' to jump back. 
+
+2. Set variable `ace-jump-sync-emacs-mark-ring' to nil, which
+will stop synchronizing mark information with emacs mark ring. "
+  (ad-disable-advice 'pop-mark 'before 'ace-jump-pop-mark-advice)
+  (ad-activate 'pop-mark)
+  (ad-disable-advice 'pop-global-mark 'before 'ace-jump-pop-global-mark-advice)
+  (ad-activate 'pop-global-mark)
+  (setq ace-jump-sync-emacs-mark-ring nil))
 
 
 ;;;; ============================================
