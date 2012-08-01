@@ -652,7 +652,8 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
                    (eq (marker-buffer (car global-mark-ring))
                        (aj-position-buffer p)))
               ;; remove that one
-              (setq global-mark-ring (cdr global-mark-ring))))))
+              (setq global-mark-ring (nconc (cdr global-mark-ring)
+                                            (list (car global-mark-ring))))))))
   
   (ace-jump-jump-to (car ace-jump-mode-mark-ring))
   (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
