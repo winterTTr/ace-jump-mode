@@ -607,6 +607,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (setcdr (nthcdr (1- ace-jump-mode-mark-ring-max)) nil)))
 
 
+;;;###autoload
 (defun ace-jump-mode-pop-mark ()
   "Pop up a postion from `ace-jump-mode-mark-ring', and jump back to that position"
   (interactive)
@@ -684,6 +685,7 @@ word-mode and char-mode"
 
 
 
+;;;###autoload
 (defun ace-jump-char-mode (query-char)
   "AceJump char mode"
   (interactive (list (read-char "Query Char:")))
@@ -696,6 +698,8 @@ word-mode and char-mode"
   (setq ace-jump-current-mode 'ace-jump-char-mode)
   (ace-jump-do (regexp-quote (make-string 1 query-char))))
 
+
+;;;###autoload
 (defun ace-jump-word-mode (head-char)
   "AceJump word mode.
 You can set `ace-jump-word-mode-use-query-char' to nil to prevent
@@ -727,6 +731,7 @@ buffer."
     (error "[AceJump] Non-printable character"))))
 
 
+;;;###autoload
 (defun ace-jump-line-mode ()
   "AceJump line mode.
 Marked each no empty line and move there"
