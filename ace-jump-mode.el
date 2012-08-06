@@ -623,15 +623,18 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
   (if ace-jump-sync-emacs-mark-ring
       (let ((p (car ace-jump-mode-mark-ring)))
-        ;; if we jump back in the current buffer,
-        ;; ace-jump-mode-pop-mark works as what pop-to-mark-command
-        ;; does. no matter the current marker exists at the
-        ;; destination or not, the pop-to-mark-command will always :
-        ;; 1. move cursor to the marker in the current buffer
-        ;; 2. pop one mark from ring, and move the mark to that position
-        ;; We just follow this rule, but use ace jump position to jump
-        ;; for the step 1. So only need to sync the step 2 as pop-mark
-        ;; we cannot call pop-mark directly here, as there may have advice on it
+        ;;    
+        ;;                                                           
+        ;;             +---+---+---+---+                                   +---+---+---+---+
+        ;;   Mark Ring | 2 | 3 | 4 | 5 |                                   | 2 | 4 | 5 | 1 |
+        ;;             +---+---+---+---+                                   +---+---+---+---+
+        ;;             +---+                                               +---+
+        ;;   Marker    | 1 |                     Pop up AJ mark 3          | 3 | <-- Cursor position
+        ;;             +---+                                               +---+
+        ;;             +---+---+---+                                       +---+---+---+ 
+        ;;   AJ Ring   | 3 | 4 | 5 |                                       | 4 | 5 | 3 |
+        ;;             +---+---+---+                                       +---+---+---+
+        ;;   
         (if (eq (current-buffer) (aj-position-buffer p))
             (progn
               (when mark-ring
@@ -657,7 +660,8 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
                                             (list (car global-mark-ring))))))))
   
   (ace-jump-jump-to (car ace-jump-mode-mark-ring))
-  (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
+  (setq ace-jump-mode-mark-ring (nconc (cdr ace-jump-mode-mark-ring)
+                                       (list (car ace-jump-mode-mark-ring)))))
 
 (defun ace-jump-quick-exchange ()
   "The function that we can use to quick exhange the current mode between
