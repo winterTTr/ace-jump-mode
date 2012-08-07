@@ -623,41 +623,58 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
   (if ace-jump-sync-emacs-mark-ring
       (let ((p (car ace-jump-mode-mark-ring)))
-        ;;    
-        ;;                                                           
-        ;;             +---+---+---+---+                                   +---+---+---+---+
-        ;;   Mark Ring | 2 | 3 | 4 | 5 |                                   | 2 | 4 | 5 | 1 |
-        ;;             +---+---+---+---+                                   +---+---+---+---+
-        ;;             +---+                                               +---+
-        ;;   Marker    | 1 |                     Pop up AJ mark 3          | 3 | <-- Cursor position
-        ;;             +---+                                               +---+
-        ;;             +---+---+---+                                       +---+---+---+ 
-        ;;   AJ Ring   | 3 | 4 | 5 |                                       | 4 | 5 | 3 |
-        ;;             +---+---+---+                                       +---+---+---+
-        ;;   
+        ;; if we are jump back in the current buffer, that means we
+        ;; only need to sync the buffer local mark-ring
         (if (eq (current-buffer) (aj-position-buffer p))
-            (progn
-              (when mark-ring
-                (setq mark-ring (nconc mark-ring (list (copy-marker (mark-marker)))))
-                (set-marker (mark-marker) (+ 0 (car mark-ring)) (current-buffer))
-                (move-marker (car mark-ring) nil)
-                (setq mark-ring (cdr mark-ring)))
-              (deactivate-mark))
+            (if (equal (aj-position-offset p) (marker-position (mark-marker)))
+                ;; if the current marker is the same as where we need
+                ;; to jump back, we do the same as pop-mark actually,
+                ;; copy implementation from pop-mark, cannot use it
+                ;; directly, as there is advice on it
+                (when mark-ring
+                  (setq mark-ring (nconc mark-ring (list (copy-marker (mark-marker)))))
+                  (set-marker (mark-marker) (+ 0 (car mark-ring)) (current-buffer))
+                  (move-marker (car mark-ring) nil)
+                  (setq mark-ring (cdr mark-ring))
+                  (deactivate-mark))
+              
+              ;;  But if there is other marker put before the wanted destination, the following scenario
+              ;;                                                           
+              ;;             +---+---+---+---+                                   +---+---+---+---+
+              ;;   Mark Ring | 2 | 3 | 4 | 5 |                                   | 2 | 4 | 5 | 3 |
+              ;;             +---+---+---+---+                                   +---+---+---+---+
+              ;;             +---+                                               +---+
+              ;;   Marker    | 1 |                                               | 1 | <-- Maker (not changed)
+              ;;             +---+                                               +---+
+              ;;             +---+                                               +---+
+              ;;   Cursor    | X |                     Pop up AJ mark 3          | 3 | <-- Cursor position
+              ;;             +---+                                               +---+
+              ;;             +---+---+---+                                       +---+---+---+ 
+              ;;   AJ Ring   | 3 | 4 | 5 |                                       | 4 | 5 | 3 |
+              ;;             +---+---+---+                                       +---+---+---+
+              ;;   
+              ;; So what we need to do, is put the found mark in mark-ring to the end
+              (setq mark-ring
+                    (let* ((po (aj-position-offset p))
+                           (devide-ret
+                            (ace-jump-devide-list-if mark-ring
+                                                     (lambda (x)
+                                                       (equal (marker-position x) po)))))
+                      (apply #'nconc (list (first devide-ret) ; the element before the same mark
+                                           (third devide-ret) ; the element after the same mark
+                                           (second devide-ret)))))) ;put the same mark to the end
+              
 
           ;; when we jump back to another buffer, which should
           ;; pop-global-mark does.
-
-          ;; Pop entries which refer to non-existent buffers.
-          (while (and global-mark-ring (not (marker-buffer (car global-mark-ring))))
-            (setq global-mark-ring (cdr global-mark-ring)))
-
-          ;; if we are jump back to the same buffer as global mark ring marked
-          (if (and global-mark-ring
-                   (eq (marker-buffer (car global-mark-ring))
-                       (aj-position-buffer p)))
-              ;; remove that one
-              (setq global-mark-ring (nconc (cdr global-mark-ring)
-                                            (list (car global-mark-ring))))))))
+          (let* ((pb (aj-position-buffer p))
+                 (devide-ret (ace-jump-devide-list-if global-mark-ring
+                                                      (lambda (x)
+                                                        (eq (marker-buffer x) pb)))))
+            (setq global-mark-ring
+                  (apply #'nconc (list (first devide-ret)
+                                       (third devide-ret)
+                                       (second devide-ret))))))))
   
   (ace-jump-jump-to (car ace-jump-mode-mark-ring))
   (setq ace-jump-mode-mark-ring (nconc (cdr ace-jump-mode-mark-ring)
@@ -859,6 +876,25 @@ You can constrol whether use the case sensitive via
 ;;;; ============================================
 ;;;; advice to sync emacs mark ring
 ;;;; ============================================
+
+(defun ace-jump-devide-list-if ( l pred )
+  "Devide the list into three part based on the PRED.
+
+So the returned value is a list that contains three elements.
+The first one is a list containing all the elements before PRED
+returns non-nil, the second is a list containing the first
+element in L make PRED to be non-nil, and the third is the list
+that after that element"
+  (let (before-list middle-element after-list found)
+    (loop for e in l
+          do (if found
+                 (setq after-list (nconc after-list (list e)))
+               (if (funcall pred e)
+                   (setq middle-element (list e)
+                         found t)
+                 (setq before-list (nconc before-list (list e))))))
+    (list before-list middle-element after-list)))
+  
 
 (defun ace-jump-filter-mark-from-ring (mark ring)
   "We will filter(remove) the first element in the RING, which
