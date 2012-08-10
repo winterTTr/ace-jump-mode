@@ -343,29 +343,29 @@ node and call LEAF-FUNC on each leaf node"
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
   "Populate the overlay to search tree, every leaf will give one overlay"
   
-  (let* (;; create the locally dynamic variable for the following function
-         (position-list candidate-list)
-         
-         ;; make the function to create overlay for each leaf node,
-         ;; here we only create each overlay for each candidate
-         ;; position, , but leave the 'display property to be empty,
-         ;; which will be fill in "update-overlay" function
-         (func-create-overlay (lambda (node)
-                                (let* ((p (car position-list))
-                                       (offset (aj-position-offset p))
-                                       (va (aj-position-visual-area p))
-                                       (w (aj-visual-area-window va))
-                                       (b (aj-visual-area-buffer va))
-                                       ;; create one char overlay
-                                       (ol (make-overlay offset (1+ offset) b)))
-                                  ;; update leaf node to remember the ol
-                                  (setf (cdr node) ol)
-                                  (overlay-put ol 'face 'ace-jump-face-foreground)
-                                  ;; associate the aj-position data with overlay
-                                  ;; so that we can use it to do the final jump
-                                  (overlay-put ol 'aj-data p)
-                                  ;; next candidate node
-                                  (setq position-list (cdr position-list))))))
+  (lexical-let* (;; create the locally dynamic variable for the following function
+                 (position-list candidate-list)
+                 
+                 ;; make the function to create overlay for each leaf node,
+                 ;; here we only create each overlay for each candidate
+                 ;; position, , but leave the 'display property to be empty,
+                 ;; which will be fill in "update-overlay" function
+                 (func-create-overlay (lambda (node)
+                                        (let* ((p (car position-list))
+                                               (offset (aj-position-offset p))
+                                               (va (aj-position-visual-area p))
+                                               (w (aj-visual-area-window va))
+                                               (b (aj-visual-area-buffer va))
+                                               ;; create one char overlay
+                                               (ol (make-overlay offset (1+ offset) b)))
+                                          ;; update leaf node to remember the ol
+                                          (setf (cdr node) ol)
+                                          (overlay-put ol 'face 'ace-jump-face-foreground)
+                                          ;; associate the aj-position data with overlay
+                                          ;; so that we can use it to do the final jump
+                                          (overlay-put ol 'aj-data p)
+                                          ;; next candidate node
+                                          (setq position-list (cdr position-list))))))
     (ace-jump-tree-preorder-traverse tree func-create-overlay)
     tree))
 
@@ -386,31 +386,31 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
   "Update overlay 'display property using each name in keys"
-  (let* (;; create dynamic variable for following function
-         (key ?\0)
-         ;; populdate each leaf node to be the specific key,
-         ;; this only update 'display' property of overlay,
-         ;; so that user can see the key from screen and select
-         (func-update-overlay
-          (lambda (node)
-            (let ((ol (cdr node)))
-              (overlay-put
-               ol
-               'display
-               (concat (make-string 1 key)
-                       (let* ((pos (overlay-get ol 'aj-data))
-                              (subs (ace-jump-buffer-substring pos)))
-                         (cond
-                          ;; when tab, we use more space to prevent screen
-                          ;; from messing up
-                          ((string-equal subs "\t")
-                           (make-string (1- tab-width) ? ))
-                          ;; when enter, we need to add one more enter
-                          ;; to make the screen not change
-                          ((string-equal subs "\n")
-                           "\n")
-                          (t
-                           "")))))))))
+  (lexical-let* (;; create dynamic variable for following function
+                 (key ?\0)
+                 ;; populdate each leaf node to be the specific key,
+                 ;; this only update 'display' property of overlay,
+                 ;; so that user can see the key from screen and select
+                 (func-update-overlay
+                  (lambda (node)
+                    (let ((ol (cdr node)))
+                      (overlay-put
+                       ol
+                       'display
+                       (concat (make-string 1 key)
+                               (let* ((pos (overlay-get ol 'aj-data))
+                                      (subs (ace-jump-buffer-substring pos)))
+                                 (cond
+                                  ;; when tab, we use more space to prevent screen
+                                  ;; from messing up
+                                  ((string-equal subs "\t")
+                                   (make-string (1- tab-width) ? ))
+                                  ;; when enter, we need to add one more enter
+                                  ;; to make the screen not change
+                                  ((string-equal subs "\n")
+                                   "\n")
+                                  (t
+                                   "")))))))))
     (loop for k in keys
           for n in (cdr tree)
           do (progn
@@ -654,28 +654,24 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
               ;;             +---+---+---+                                       +---+---+---+
               ;;   
               ;; So what we need to do, is put the found mark in mark-ring to the end
-              (setq mark-ring
-                    (let* ((po (aj-position-offset p))
-                           (devide-ret
-                            (ace-jump-devide-list-if mark-ring
-                                                     (lambda (x)
-                                                       (equal (marker-position x) po)))))
-                      (apply #'nconc (list (first devide-ret) ; the element before the same mark
-                                           (third devide-ret) ; the element after the same mark
-                                           (second devide-ret)))))) ;put the same mark to the end
+              (lexical-let ((po (aj-position-offset p)))
+                (setq mark-ring
+                      (ace-jump-move-1th-found-to-end mark-ring
+                                                      (lambda (x)
+                                                        (equal (marker-position x) po))))))
               
 
-          ;; when we jump back to another buffer, which should
-          ;; pop-global-mark does.
-          (let* ((pb (aj-position-buffer p))
-                 (devide-ret (ace-jump-devide-list-if global-mark-ring
-                                                      (lambda (x)
-                                                        (eq (marker-buffer x) pb)))))
+          ;; when we jump back to another buffer, do as the
+          ;; pop-global-mark does. But we move the marker with the
+          ;; same target buffer to the end, not always the first one
+          (lexical-let ((pb (aj-position-buffer p)))
             (setq global-mark-ring
-                  (apply #'nconc (list (first devide-ret)
-                                       (third devide-ret)
-                                       (second devide-ret))))))))
+                  (ace-jump-move-1th-found-to-end global-mark-ring
+                                                  (lambda (x)
+                                                    (eq (marker-buffer x) pb))))))))
+          
   
+  ;; move the first element to the end of the ring
   (ace-jump-jump-to (car ace-jump-mode-mark-ring))
   (setq ace-jump-mode-mark-ring (nconc (cdr ace-jump-mode-mark-ring)
                                        (list (car ace-jump-mode-mark-ring)))))
@@ -877,79 +873,49 @@ You can constrol whether use the case sensitive via
 ;;;; advice to sync emacs mark ring
 ;;;; ============================================
 
-(defun ace-jump-devide-list-if ( l pred )
-  "Devide the list into three part based on the PRED.
+(defun ace-jump-move-to-end-if ( l pred )
+  "Move all the element in a list to the end of list if it make
+the PRED to return non-nil.
 
-So the returned value is a list that contains three elements.
-The first one is a list containing all the elements before PRED
-returns non-nil, the second is a list containing the first
-element in L make PRED to be non-nil, and the third is the list
-that after that element"
-  (let (before-list middle-element after-list found)
+PRED is a function object which can pass to funcall and accept
+one argument, which will be every element in the list.
+Such as : (lambda (x) (equal x 1)) "
+  (let (true-list false-list)
     (loop for e in l
-          do (if found
-                 (setq after-list (nconc after-list (list e)))
-               (if (funcall pred e)
-                   (setq middle-element (list e)
-                         found t)
-                 (setq before-list (nconc before-list (list e))))))
-    (list before-list middle-element after-list)))
+          do (if (funcall pred e)
+                 (setq true-list (cons e true-list))
+               (setq false-list (cons e false-list))))
+    (nconc (nreverse false-list)
+           (and true-list (nreverse true-list)))))
+
+(defun ace-jump-move-first-to-end-if (l pred)
+  "Only move the first found one to the end of list"
+  (lexical-let ((pred pred)
+                found)
+    (ace-jump-move-to-end-if l
+                             (lambda (x)
+                               (if found
+                                   nil
+                                 (setq found (funcall pred x)))))))
+
   
-
-(defun ace-jump-filter-mark-from-ring (mark ring)
-  "We will filter(remove) the first element in the RING, which
-has the same position and same buffer with MARK. The RING need to
-be a aj-position structure list, and MARK need to be a emacs
-marker object.
-
-This function will not modify RING, only returned the filted ring."
-  (let ((mb (marker-buffer mark))
-        (mp (marker-position mark))
-        find-one)
-    ;; the first one with same position in the same buffer will be discard
-    (loop for e in ring
-          ;; already find the first
-          if (or find-one
-                 ;; we find the one with same buffer and same position
-                 ;; so we will NOT want it
-                 (not (setq find-one
-                            (and (eq (aj-position-buffer e) mb)
-                                 (equal (aj-position-offset e) mp)))))
-          collect e)))
-
-(defun ace-jump-filter-pos-from-ring (pos ring)
-  "Remove the first element in the RING, which has the same
-position and buffer with POS. The RING should be a emacs marker
-object list, and pos is a aj-position object.
-
-This funciton will not modify RING, only returned the filtered ring."
-  (let ((pb (aj-position-buffer pos))
-        (po (aj-position-offset pos))
-        find-one)
-    ;; the first one with same position in the same buffer will be discard
-    (loop for m in ring
-          ;; already find the first
-          if (or find-one
-                 ;; we find the one with same buffer and same position
-                 ;; so we will NOT want it
-                 (not (setq find-one
-                            (and (eq (marker-buffer m) pb)
-                                 (equal (marker-position m) po)))))
-          collect m)))
-
 
 (defadvice pop-mark (before ace-jump-pop-mark-advice)
   "When `pop-mark' is called to jump back, this advice will sync the mark ring.
-Remove the position from `ace-jump-mode-mark-ring'."
-  (if mark-ring
-      (setq ace-jump-mode-mark-ring
-            (ace-jump-filter-mark-from-ring (car mark-ring)
-                                            ace-jump-mode-mark-ring))))
+Move the same position to the end of `ace-jump-mode-mark-ring'."
+  (lexical-let ((mp (mark t))
+                (cb (current-buffer)))
+    (if mp
+        (setq ace-jump-mode-mark-ring
+              (ace-jump-move-first-to-end-if ace-jump-mode-mark-ring
+                                             (lambda (x)
+                                               (and (equal (aj-position-offset x) mp)
+                                                    (eq (aj-position-buffer x) cb))))))))
             
 
 (defadvice pop-global-mark (before ace-jump-pop-global-mark-advice)
   "When `pop-global-mark' is called to jump back, this advice will sync the mark ring.
-Remove the position from `ace-jump-mode-mark-ring'."
+Move the aj-position with the same buffer to the end of `ace-jump-mode-mark-ring'."
   (interactive)
   ;; find the one that will be jump to
   (let ((index global-mark-ring))
@@ -958,9 +924,12 @@ Remove the position from `ace-jump-mode-mark-ring'."
       (setq index (cdr index)))
     (if index
         ;; find the mark
-        (setq ace-jump-mode-mark-ring
-              (ace-jump-filter-mark-from-ring (car index)
-                                              ace-jump-mode-mark-ring)))))
+        (lexical-let ((mb (marker-buffer (car index))))
+          (setq ace-jump-mode-mark-ring
+                (ace-jump-move-to-end-if ace-jump-mode-mark-ring
+                                         (lambda (x)
+                                           (eq (aj-position-buffer x) mb))))))))
+                                              
 
 (defun ace-jump-mode-enable-mark-sync ()
   "Enable the sync funciton between ace jump mode mark ring and emacs mark ring.
