@@ -1,10 +1,10 @@
 ;;; ace-jump-mode.el --- a quick cursor location minor mode for emacs
 
-;; Copyright (C) 2011 Free Software Foundation, Inc.
+;; Copyright (C) 2012 Free Software Foundation, Inc.
 
 ;; Author   : winterTTr <winterTTr@gmail.com>
 ;; URL      : https://github.com/winterTTr/ace-jump-mode/
-;; Version  : 2.0
+;; Version  : 2.0.RC
 ;; Keywords : motion, location, cursor
 
 ;; This file is part of GNU Emacs.
@@ -34,7 +34,7 @@
 ;;
 ;; I firstly see such kind of moving style is in a vim plugin called
 ;; EasyMotion. It really attract me a lot. So I decide to write
-;; one for Emacs and make it better.
+;; one for Emacs and MAKE IT BETTER.
 ;;
 ;; So I want to thank to :
 ;;         Bartlomiej P.   for his PreciseJump
@@ -54,17 +54,39 @@
 ;; Add the following code to your init file, of course you can select
 ;; the key that you prefer to.
 ;; ----------------------------------------------------------
-;; (add-to-list 'load-path "which-folder-ace-jump-mode-file-in/")
-;; (require 'ace-jump-mode)
+;; ;;
+;; ;; ace jump mode major function
+;; ;; 
+;; (add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
+;; (autoload
+;;   'ace-jump-mode
+;;   "ace-jump-mode"
+;;   "Emacs quick move minor mode"
+;;   t)
+;; ;; you can select the key you prefer to
 ;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 ;;
-;; ;;If you also use viper mode :
+;; ;; 
+;; ;; enable a more powerful jump back function from ace jump mode
+;; ;;
+;; (autoload
+;;   'ace-jump-mode-pop-mark
+;;   "ace-jump-mode"
+;;   "Ace jump back:-)"
+;;   t)
+;; (eval-after-load "ace-jump-mode"
+;;   '(ace-jump-mode-enable-mark-sync))
+;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+;; 
+;; ;;If you use viper mode :
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
+;; ;;If you use evil
+;; (define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
 ;; ----------------------------------------------------------
-;;
 
 ;;; For more information
-;; Please access https://github.com/winterTTr/ace-jump-mode/wiki
+;; Intro Doc: https://github.com/winterTTr/ace-jump-mode/wiki
+;; FAQ      : https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ
 
 ;; Code goes here
 
@@ -656,9 +678,9 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
               ;; So what we need to do, is put the found mark in mark-ring to the end
               (lexical-let ((po (aj-position-offset p)))
                 (setq mark-ring
-                      (ace-jump-move-1th-found-to-end mark-ring
-                                                      (lambda (x)
-                                                        (equal (marker-position x) po))))))
+                      (ace-jump-move-first-to-end-if mark-ring
+                                                     (lambda (x)
+                                                       (equal (marker-position x) po))))))
               
 
           ;; when we jump back to another buffer, do as the
@@ -666,9 +688,9 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
           ;; same target buffer to the end, not always the first one
           (lexical-let ((pb (aj-position-buffer p)))
             (setq global-mark-ring
-                  (ace-jump-move-1th-found-to-end global-mark-ring
-                                                  (lambda (x)
-                                                    (eq (marker-buffer x) pb))))))))
+                  (ace-jump-move-first-to-end-if global-mark-ring
+                                                 (lambda (x)
+                                                   (eq (marker-buffer x) pb))))))))
           
   
   ;; move the first element to the end of the ring
