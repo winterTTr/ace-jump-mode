@@ -308,6 +308,9 @@ jump internal use.  If you want to change it, use
 (defvar ace-jump-mode-before-jump-hook nil
   "Function(s) to call just before moving the cursor to a selected match")
 
+(defvar ace-jump-mode-end-hook nil
+  "Function(s) to call when ace-jump-mode is going to end up")
+
 (defvar ace-jump-allow-invisible nil
   "Control if ace-jump should select the invisible char as candidate.
 Normally, the ace jump mark cannot be seen if the target character is invisible.
@@ -618,7 +621,8 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       (ace-jump-push-mark)
       (run-hooks 'ace-jump-mode-before-jump-hook)
       (ace-jump-jump-to (car candidate-list))
-      (message "[AceJump] One candidate, move to it directly"))
+      (message "[AceJump] One candidate, move to it directly")
+      (run-hooks 'ace-jump-mode-end-hook))
      ;; more than one, we need to enter AceJump mode
      (t
       ;; make indirect buffer for those windows that show the same buffer
@@ -927,7 +931,8 @@ You can constrol whether use the case sensitive via
         (ace-jump-done)
         (ace-jump-push-mark)
         (run-hooks 'ace-jump-mode-before-jump-hook)
-        (ace-jump-jump-to aj-data)))
+        (ace-jump-jump-to aj-data))
+      (run-hooks 'ace-jump-mode-end-hook))
      (t
       (ace-jump-done)
       (error "[AceJump] Internal error: tree node type is invalid")))))
