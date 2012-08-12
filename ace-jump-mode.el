@@ -95,8 +95,82 @@
 (eval-when-compile
   (require 'cl))
 
+;;;; ============================================
+;;;; Utilities for ace-jump-mode
+;;;; ============================================
 
-;;; register as a minor mode
+;; ---------------------
+;; aj-position
+;; ---------------------
+
+;; make a position in a visual area
+(defstruct aj-position offset visual-area)
+
+(defmacro aj-position-buffer (aj-pos)
+  "Get the buffer object from `aj-position'."
+  `(aj-visual-area-buffer (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-window (aj-pos)
+  "Get the window object from `aj-position'."
+  `(aj-visual-area-window (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-frame (aj-pos)
+  "Get the frame object from `aj-position'."
+  `(aj-visual-area-frame (aj-position-visual-area ,aj-pos)))
+
+(defmacro aj-position-recover-buffer (aj-pos)
+  "Get the recover-buffer object from `aj-position'."
+  `(aj-visual-area-recover-buffer (aj-position-visual-area ,aj-pos)))
+
+
+
+;; ---------------------
+;; aj-visual-area
+;; ---------------------
+
+;; a record for all the possible visual area
+;; a visual area is a window that showing some buffer in some frame.
+(defstruct aj-visual-area buffer window frame recover-buffer)
+
+
+;; ---------------------
+;; a FIFO queue implementation
+;; ---------------------
+(defstruct aj-queue head tail)
+
+(defun aj-queue-push (item q)
+  "enqueue"
+  (let ( (head (aj-queue-head q) )
+         (tail (aj-queue-tail q) )
+         (c (list item) ) )
+    (cond
+     ((null (aj-queue-head q))
+      (setf (aj-queue-head q) c)
+      (setf (aj-queue-tail q) c))
+     (t
+      (setf (cdr (aj-queue-tail q)) c)
+      (setf (aj-queue-tail q) c)))))
+
+(defun aj-queue-pop (q)
+  "dequeue"
+  (if (null (aj-queue-head q))
+      (error "[AceJump] Interal Error: Empty queue"))
+
+  (let ((ret (aj-queue-head q)))
+    (if (eq ret (aj-queue-tail q))
+        ;; only one item left
+        (progn
+          (setf (aj-queue-head q) nil)
+          (setf (aj-queue-tail q) nil))
+      ;; multi item left, move forward the head
+      (setf (aj-queue-head q) (cdr ret)))
+    (car ret)))
+
+
+
+;;; main code start here
+
+;; register as a minor mode
 (or (assq 'ace-jump-mode minor-mode-alist)
     (nconc minor-mode-alist
            (list '(ace-jump-mode ace-jump-mode))))
@@ -636,7 +710,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
     (setq ace-jump-mode-mark-ring (cons pos ace-jump-mode-mark-ring)))
   ;; when exeed the max count, discard the last one
   (if (> (length ace-jump-mode-mark-ring) ace-jump-mode-mark-ring-max)
-      (setcdr (nthcdr (1- ace-jump-mode-mark-ring-max)) nil)))
+      (setcdr (nthcdr (1- ace-jump-mode-mark-ring-max) ace-jump-mode-mark-ring) nil)))
 
 
 ;;;###autoload
@@ -996,67 +1070,10 @@ will stop synchronizing mark information with emacs mark ring. "
   (setq ace-jump-sync-emacs-mark-ring nil))
 
 
-;;;; ============================================
-;;;; Utilities for ace-jump-mode
-;;;; ============================================
-
-;; aj-position
-;;
-;; make a position in a visual area
-(defstruct aj-position offset visual-area)
-
-(defmacro aj-position-buffer (aj-pos)
-  "Get the buffer object from `aj-position'."
-  `(aj-visual-area-buffer (aj-position-visual-area ,aj-pos)))
-
-(defmacro aj-position-window (aj-pos)
-  "Get the window object from `aj-position'."
-  `(aj-visual-area-window (aj-position-visual-area ,aj-pos)))
-
-(defmacro aj-position-frame (aj-pos)
-  "Get the frame object from `aj-position'."
-  `(aj-visual-area-frame (aj-position-visual-area ,aj-pos)))
-
-(defmacro aj-position-recover-buffer (aj-pos)
-  "Get the recover-buffer object from `aj-position'."
-  `(aj-visual-area-recover-buffer (aj-position-visual-area ,aj-pos)))
-
-;; a record for all the possible visual area
-;; a visual area is a window that showing some buffer in some frame.
-(defstruct aj-visual-area buffer window frame recover-buffer)
-
-(defstruct aj-queue head tail)
-
-(defun aj-queue-push (item q)
-  "enqueue"
-  (let ( (head (aj-queue-head q) )
-         (tail (aj-queue-tail q) )
-         (c (list item) ) )
-    (cond
-     ((null (aj-queue-head q))
-      (setf (aj-queue-head q) c)
-      (setf (aj-queue-tail q) c))
-     (t
-      (setf (cdr (aj-queue-tail q)) c)
-      (setf (aj-queue-tail q) c)))))
-
-(defun aj-queue-pop (q)
-  "dequeue"
-  (if (null (aj-queue-head q))
-      (error "[AceJump] Interal Error: Empty queue"))
-
-  (let ((ret (aj-queue-head q)))
-    (if (eq ret (aj-queue-tail q))
-        ;; only one item left
-        (progn
-          (setf (aj-queue-head q) nil)
-          (setf (aj-queue-tail q) nil))
-      ;; multi item left, move forward the head
-      (setf (aj-queue-head q) (cdr ret)))
-    (car ret)))
-
-
-
 (provide 'ace-jump-mode)
 
 ;;; ace-jump-mode.el ends here
+
+;; Local Variables: 
+;; byte-compile-warnings: (not cl-functions) 
+;; End: 
