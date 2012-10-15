@@ -1,6 +1,4 @@
-;; -*- coding: utf-8-unix -*-
-
-;;; ace-jump-mode.el --- a quick cursor location minor mode for emacs
+;;; ace-jump-mode.el --- a quick cursor location minor mode for emacs -*- coding: utf-8-unix -*-
 
 ;; Copyright (C) 2012 Free Software Foundation, Inc.
 
@@ -23,6 +21,8 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
 
 ;;; INTRODUCTION
 ;;
@@ -90,7 +90,7 @@
 ;; Intro Doc: https://github.com/winterTTr/ace-jump-mode/wiki
 ;; FAQ      : https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ
 
-;; Code goes here
+;;; Code:
 
 (eval-when-compile
   (require 'cl))
