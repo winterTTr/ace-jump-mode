@@ -7,7 +7,7 @@
 ;; Version  : 2.0.RC
 ;; Keywords : motion, location, cursor
 
-;; This file is part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
