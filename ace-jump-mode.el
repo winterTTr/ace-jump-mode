@@ -701,7 +701,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
   (ace-jump-cycle 'prev))
 
 (defun ace-jump-cycle (direction)
-  "Cyple to the jump in the DIRECTION."
+  "Cycle to the jump in the DIRECTION."
   (let ((pt (point)))
     (let (accum next prev)
       (ace-jump-tree-preorder-traverse
