@@ -724,10 +724,10 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
                       (setq next p))))))))
       (cond ((eq direction 'next)
              (goto-char (or (and next (aj-position-offset next))
-                            (aj-position-offset (cadr (reverse accum))))))
+                            (aj-position-offset (car (reverse accum))))))
             ((eq direction 'prev)
              (goto-char (or (and prev (aj-position-offset prev))
-                            (aj-position-offset (cadr accum)))))))))
+                            (aj-position-offset (car accum)))))))))
 
 (defun ace-jump-jump-to (position)
   "Jump to the POSITION, which is a `aj-position' structure storing the position information"
