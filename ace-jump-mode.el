@@ -284,6 +284,12 @@ jump internal use.  If you want to change it, use
 `ace-jump-mode-enable-mark-sync' or
 `ace-jump-mode-disable-mark-sync'.")
 
+(defvar ace-jump-done-position nil
+  "Save the current position.
+
+If ace-jump-mode will have been canceled, cursor will go back at this
+position.")
+
 (defgroup ace-jump nil
   "ace jump group"
   :group 'convenience)
@@ -600,6 +606,8 @@ QUERY-STRING should be a valid regexp string, which finally pass to `search-forw
 
 You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 "
+  (setq ace-jump-done-position (point))
+
   ;; we check the move key to make it valid, cause it can be customized by user
   (if (or (null ace-jump-mode-move-keys)
           (< (length ace-jump-mode-move-keys) 2)
@@ -665,12 +673,60 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
               (dolist (key-code ace-jump-mode-move-keys)
                 (define-key map (make-string 1 key-code) 'ace-jump-move))
               (define-key map (kbd "C-c C-c") 'ace-jump-quick-exchange)
+              (define-key map (kbd "RET") 'ace-jump-ret)
+              (define-key map (kbd "C-n") 'ace-jump-cycle-next)
+              (define-key map (kbd "TAB") 'ace-jump-cycle-next)
+              (define-key map (kbd "C-p") 'ace-jump-cycle-prev)
               (define-key map [t] 'ace-jump-done)
               map))
 
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
       (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))
 
+(defun ace-jump-ret ()
+  "Accept the jump."
+  (interactive)
+  (setq ace-jump-done-position (point))
+  (ace-jump-done))
+
+(defun ace-jump-cycle-next ()
+  "Cycle to the next jump."
+  (interactive)
+  (ace-jump-cycle 'next))
+
+(defun ace-jump-cycle-prev ()
+  "Cycle to the previous jump."
+  (interactive)
+  (ace-jump-cycle 'prev))
+
+(defun ace-jump-cycle (direction)
+  "Cycle to the jump in the DIRECTION."
+  (let ((pt (point)))
+    (let (accum next prev)
+      (ace-jump-tree-preorder-traverse
+       ace-jump-search-tree
+       (lambda (leaf)
+         (add-to-list 'accum (overlay-get (cdr leaf) 'aj-data))
+         (let ((p (overlay-get (cdr leaf) 'aj-data)))
+           ;; FIXME: this is same buffer only
+           (when (and (eq (aj-position-frame p) (selected-frame))
+                      (eq (aj-position-window p) (selected-window))
+                      (eq (aj-position-buffer p) (current-buffer)))
+             (let ((pp (aj-position-offset p)))
+               (cond ((and (< pp pt)
+                           (or (null prev)
+                               (< (aj-position-offset prev) pp)))
+                      (setq prev p))
+                     ((and (< pt pp)
+                           (or (null next)
+                               (< pp (aj-position-offset next))))
+                      (setq next p))))))))
+      (cond ((eq direction 'next)
+             (goto-char (or (and next (aj-position-offset next))
+                            (aj-position-offset (car (reverse accum))))))
+            ((eq direction 'prev)
+             (goto-char (or (and prev (aj-position-offset prev))
+                            (aj-position-offset (car accum)))))))))
 
 (defun ace-jump-jump-to (position)
   "Jump to the POSITION, which is a `aj-position' structure storing the position information"
@@ -956,6 +1012,9 @@ You can constrol whether use the case sensitive via
 (defun ace-jump-done()
   "stop AceJump motion"
   (interactive)
+
+  (callf (lambda (p) (goto-char p) nil) ace-jump-done-position)
+
   ;; clear the status flag
   (setq ace-jump-query-char nil)
   (setq ace-jump-current-mode nil)
