@@ -813,6 +813,11 @@ word-mode and char-mode"
 (defun ace-jump-char-mode (query-char)
   "AceJump char mode"
   (interactive (list (read-char "Query Char:")))
+
+  ;; We should prevent recursion call this function.  This can happen
+  ;; when you trigger the key for ace jump again when already in ace
+  ;; jump mode.  So we stop the previous one first.
+  (if ace-jump-current-mode (ace-jump-done))
   
   (if (eq (ace-jump-char-category query-char) 'other)
     (error "[AceJump] Non-printable character"))
@@ -832,6 +837,12 @@ buffer."
   (interactive (list (if ace-jump-word-mode-use-query-char
                          (read-char "Head Char:")
                        nil)))
+
+  ;; We should prevent recursion call this function.  This can happen
+  ;; when you trigger the key for ace jump again when already in ace
+  ;; jump mode.  So we stop the previous one first.
+  (if ace-jump-current-mode (ace-jump-done))
+
   (cond
    ((null head-char)
     ;; \<  - start of word
@@ -860,6 +871,12 @@ buffer."
   "AceJump line mode.
 Marked each no empty line and move there"
   (interactive)
+
+  ;; We should prevent recursion call this function.  This can happen
+  ;; when you trigger the key for ace jump again when already in ace
+  ;; jump mode.  So we stop the previous one first.
+  (if ace-jump-current-mode (ace-jump-done))
+  
   (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^"))
 
