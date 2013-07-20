@@ -966,7 +966,7 @@ You can constrol whether use the case sensitive via
                (setf (aj-visual-area-buffer va) original-buffer)
                (setf (aj-visual-area-recover-buffer va) nil)
                ;; kill indirect buffer
-               (kill-buffer fake-buffer))))
+               (ace-jump-kill-buffer fake-buffer))))
 
   ;; delete overlays in search tree
   (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
@@ -976,6 +976,14 @@ You can constrol whether use the case sensitive via
 
   (remove-hook 'mouse-leave-buffer-hook 'ace-jump-done)
   (remove-hook 'kbd-macro-termination-hook 'ace-jump-done))
+
+(defun ace-jump-kill-buffer(buffer)
+  "Utility function to kill buffer for ace jump mode.
+We also need to handle the buffer which has clients on it"
+  (if (and (boundp 'server-buffer-clients)
+           server-buffer-clients)
+      (server-buffer-done buffer t))
+  (kill-buffer buffer))
 
 ;;;; ============================================
 ;;;; advice to sync emacs mark ring
