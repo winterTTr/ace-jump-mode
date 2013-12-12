@@ -175,7 +175,7 @@
     (nconc minor-mode-alist
            (list '(ace-jump-mode ace-jump-mode))))
 
-;; custoize variable
+;; customize variable
 (defvar ace-jump-word-mode-use-query-char t
   "If we need to ask for the query char before enter `ace-jump-word-mode'")
 
@@ -665,7 +665,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
             (let ( (map (make-keymap)) )
               (dolist (key-code ace-jump-mode-move-keys)
                 (define-key map (make-string 1 key-code) 'ace-jump-move))
-              (define-key map (kbd "C-c") 'ace-jump-quick-exchange)
+              (define-key map (kbd "SPC") 'ace-jump-quick-exchange) ; evil
               (define-key map [t] 'ace-jump-done)
               map))
 
