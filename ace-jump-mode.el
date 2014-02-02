@@ -375,7 +375,7 @@ The returned value is a list of `aj-position' record."
                              until (or
                                     (> (point) end-point)
                                     (eobp))
-                          if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
+                             if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
                                   (or (null ace-jump-search-filter)
                                       (ignore-errors
                                         (funcall ace-jump-search-filter))))
