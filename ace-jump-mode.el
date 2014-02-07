@@ -525,7 +525,7 @@ node and call LEAF-FUNC on each leaf node"
                                   (t
                                    ;; there are wide-width characters
                                    ;; so, we need paddings
-                                   (make-string (1- (string-width subs)) ? ))))))))))
+                                   (make-string (max 0 (1- (string-width subs))) ? ))))))))))
     (loop for k in keys
           for n in (cdr tree)
           do (progn
