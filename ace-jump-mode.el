@@ -199,11 +199,12 @@ background.")
 (defvar ace-jump-mode-scope 'global
   "Define what is the scope that ace-jump-mode works.
 
-Now, there three kind of values for this:
-1. 'global : ace jump can work across any window and frame, this is also the default.
-2. 'frame  : ace jump will work for the all windows in current frame.
-3. 'window : ace jump will only work on current window only.
-            This is the same behavior for 1.0 version.")
+Now, there are four kinds of values for this:
+1. 'global  : ace jump can work across any window and frame, this is also the default.
+2. 'frame   : ace jump will work for the all windows in current frame.
+3. 'visible : ace jump will work for all windows in visible frames.
+3. 'window  : ace jump will only work on current window only.
+              This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-detect-punc t
   "When this is non-nil, the ace jump word mode will detect the
@@ -544,6 +545,13 @@ node and call LEAF-FUNC on each leaf node"
   (cond
    ((eq ace-jump-mode-scope 'global)
     (loop for f in (frame-list)
+          append (loop for w in (window-list f)
+                       collect (make-aj-visual-area :buffer (window-buffer w)
+                                                    :window w
+                                                    :frame f))))
+   ((eq ace-jump-mode-scope 'visible)
+    (loop for f in (frame-list)
+          if (eq t (frame-visible-p f))
           append (loop for w in (window-list f)
                        collect (make-aj-visual-area :buffer (window-buffer w)
                                                     :window w
