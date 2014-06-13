@@ -815,9 +815,6 @@ word-mode and char-mode"
    (t
     nil)))
 
-
-
-
 ;;;###autoload
 (defun ace-jump-char-mode (query-char)
   "AceJump char mode"
@@ -888,6 +885,14 @@ Marked each no empty line and move there"
   
   (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^"))
+
+;;;###autoload
+(defun ace-jump-char-or-line-mode (query-char)
+  (interactive (list (read-char "Query Char:")))
+  
+  (if (equal query-char #xD)
+      (ace-jump-line-mode)
+    (ace-jump-char-mode query-char)))
 
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
