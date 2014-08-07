@@ -571,7 +571,7 @@ node and call LEAF-FUNC on each leaf node"
   "The main function to start the AceJump mode.
 QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
 
-You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
+You can control whether use the case sensitive via `ace-jump-mode-case-fold'.
 "
   ;; we check the move key to make it valid, cause it can be customized by user
   (if (or (null ace-jump-mode-move-keys)
