@@ -353,7 +353,7 @@ There is four possible return value:
   "Returns position of char at beginning of line N away from point"
   (save-excursion
     (beginning-of-line)
-    (next-line n)
+    (forward-line n)
     (point)))
 
 (defun ace-jump-search-candidate (re-query-string visual-area-list)
