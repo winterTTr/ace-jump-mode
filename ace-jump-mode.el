@@ -292,9 +292,9 @@ that `ace-jump-search-candidate' will use as an additional filter.")
 
 
 (defface ace-jump-face-foreground
-  '((((class color)) (:foreground "red" :underline nil))
-    (((background dark)) (:foreground "gray100" :underline nil))
-    (((background light)) (:foreground "gray0" :underline nil))
+  '((((class color)) (:foreground "red" :underline nil :strike-through nil))
+    (((background dark)) (:foreground "gray100" :underline nil :strike-through nil))
+    (((background light)) (:foreground "gray0" :underline nil :strike-through nil))
     (t (:foreground "gray100" :underline nil)))
   "Face for foreground of AceJump motion"
   :group 'ace-jump)
