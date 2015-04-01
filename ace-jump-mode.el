@@ -602,7 +602,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
                       collect (let* ((w (aj-visual-area-window va))
                                      (b (aj-visual-area-buffer va))
                                      (ol (make-overlay (window-start w)
-                                                       (window-end w)
+                                                       (window-end w t)
                                                        b)))
                                 (overlay-put ol 'face 'ace-jump-face-background)
                                 ol))))
