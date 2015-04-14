@@ -292,10 +292,10 @@ that `ace-jump-search-candidate' will use as an additional filter.")
 
 
 (defface ace-jump-face-foreground
-  '((((class color)) (:foreground "red"))
-    (((background dark)) (:foreground "gray100"))
-    (((background light)) (:foreground "gray0"))
-    (t (:foreground "gray100")))
+  '((((class color)) (:foreground "red" :underline nil))
+    (((background dark)) (:foreground "gray100" :underline nil))
+    (((background light)) (:foreground "gray0" :underline nil))
+    (t (:foreground "gray100" :underline nil)))
   "Face for foreground of AceJump motion"
   :group 'ace-jump)
 
@@ -647,26 +647,38 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
   (let ((offset (aj-position-offset position))
         (frame (aj-position-frame position))
         (window (aj-position-window position))
-        (buffer (aj-position-buffer position)))
-        ;; focus to the frame
-        (if (and (frame-live-p frame)
-                 (not (eq frame (selected-frame))))
-            (select-frame-set-input-focus (window-frame window)))
-        
-        ;; select the correct window
-        (if (and (window-live-p window)
-                 (not (eq window (selected-window))))
-            (select-window window))
-        
-        ;; swith to buffer
-        (if (and (buffer-live-p buffer)
-                 (not (eq buffer (window-buffer window))))
-            (switch-to-buffer buffer))
+        (buffer (aj-position-buffer position))
+        (line-mode-column 0))
 
-        ;; move to correct position
-        (if (and (buffer-live-p buffer)
-                 (eq (current-buffer) buffer))
-            (goto-char offset))))
+    ;; save the column before do line jump, so that we can jump to the
+    ;; same column as previous line, make it the same behavior as C-n/C-p
+    (if (eq ace-jump-current-mode 'ace-jump-line-mode)
+        (setq line-mode-column (current-column)))
+
+    ;; focus to the frame
+    (if (and (frame-live-p frame)
+             (not (eq frame (selected-frame))))
+        (select-frame-set-input-focus (window-frame window)))
+    
+    ;; select the correct window
+    (if (and (window-live-p window)
+             (not (eq window (selected-window))))
+        (select-window window))
+
+    ;; swith to buffer
+    (if (and (buffer-live-p buffer)
+             (not (eq buffer (window-buffer window))))
+        (switch-to-buffer buffer))
+
+    ;; move to correct position
+    (if (and (buffer-live-p buffer)
+             (eq (current-buffer) buffer))
+        (goto-char offset))
+
+    ;; recover to the same column if we use the line jump mode
+    (if (eq ace-jump-current-mode 'ace-jump-line-mode)
+        (move-to-column line-mode-column))
+    ))
 
 (defun ace-jump-push-mark ()
   "Push the current position information onto the `ace-jump-mode-mark-ring'."
@@ -912,10 +924,10 @@ You can constrol whether use the case sensitive via
      ((eq (car node) 'leaf)
       ;; need to save aj data, as `ace-jump-done' will clean it
       (let ((aj-data (overlay-get (cdr node) 'aj-data)))
-        (ace-jump-done)
         (ace-jump-push-mark)
         (run-hooks 'ace-jump-mode-before-jump-hook)
         (ace-jump-jump-to aj-data))
+        (ace-jump-done)
       (run-hooks 'ace-jump-mode-end-hook))
      (t
       (ace-jump-done)
