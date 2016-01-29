@@ -862,6 +862,18 @@ Marked each no empty line and move there"
   (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^"))
 
+;; Make a simple regexp-base jump mode
+(defmacro ace-jump-make-regexp-mode (mode-name re &optional doc)
+  "Create simple regexp-base AceJump mode
+Example: (ace-jump-make-regexp-mode my-ace-jump-line-mode \"^\" \"AceJump line mode.\\n Marked each no empty line and move there\")"
+  (let ((doc (or doc (concat "AceJump " (symbol-name mode-name)))))
+    `(defun ,mode-name ()
+       ,doc
+       (interactive)
+       (if ace-jump-current-mode (ace-jump-done))
+       (setq ace-jump-current-mode 'ace-jump-point-id-mode)
+       (ace-jump-do ,re))))
+
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
   "AceJump mode is a minor mode for you to quick jump to a
