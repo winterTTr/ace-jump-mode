@@ -871,7 +871,7 @@ Example: (ace-jump-make-regexp-mode my-ace-jump-line-mode \"^\" \"AceJump line m
        ,doc
        (interactive)
        (if ace-jump-current-mode (ace-jump-done))
-       (setq ace-jump-current-mode 'ace-jump-point-id-mode)
+       (setq ace-jump-current-mode mode-name)
        (ace-jump-do ,re))))
 
 ;;;###autoload
