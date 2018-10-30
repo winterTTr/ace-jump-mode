@@ -29,13 +29,13 @@
 
 ;; What's this?
 ;;
-;; It is a minor mode for Emacs. It can help you to move your cursor
-;; to ANY position in emacs by using only 3 times key press. 
+;; It is a minor mode for Emacs.  It can help you to move your cursor
+;; to ANY position in Emacs by using only 3 times key press.
 
 ;; Where does ace jump mode come from ?
 ;;
 ;; I firstly see such kind of moving style is in a vim plugin called
-;; EasyMotion. It really attract me a lot. So I decide to write
+;; EasyMotion.  It really attract me a lot.  So I decide to write
 ;; one for Emacs and MAKE IT BETTER.
 ;;
 ;; So I want to thank to :
@@ -45,9 +45,9 @@
 
 ;; What's ace-jump-mode ?
 ;;
-;; ace-jump-mode is an fast/direct cursor location minor mode. It will
+;; ace-jump-mode is an fast/direct cursor location minor mode.  It will
 ;; create the N-Branch search tree internal and marks all the possible
-;; position with predefined keys in within the whole emacs view.
+;; position with predefined keys in within the whole Emacs view.
 ;; Allowing you to move to the character/word/line almost directly.
 ;;
 
@@ -106,19 +106,19 @@
 (defstruct aj-position offset visual-area)
 
 (defmacro aj-position-buffer (aj-pos)
-  "Get the buffer object from `aj-position'."
+  "Get the buffer object from `aj-position' AJ-POS."
   `(aj-visual-area-buffer (aj-position-visual-area ,aj-pos)))
 
 (defmacro aj-position-window (aj-pos)
-  "Get the window object from `aj-position'."
+  "Get the window object from `aj-position' AJ-POS."
   `(aj-visual-area-window (aj-position-visual-area ,aj-pos)))
 
 (defmacro aj-position-frame (aj-pos)
-  "Get the frame object from `aj-position'."
+  "Get the frame object from `aj-position' AJ-POS."
   `(aj-visual-area-frame (aj-position-visual-area ,aj-pos)))
 
 (defmacro aj-position-recover-buffer (aj-pos)
-  "Get the recover-buffer object from `aj-position'."
+  "Get the recover-buffer object from `aj-position' AJ-POS."
   `(aj-visual-area-recover-buffer (aj-position-visual-area ,aj-pos)))
 
 
@@ -137,7 +137,7 @@
 (defstruct aj-queue head tail)
 
 (defun aj-queue-push (item q)
-  "enqueue"
+  "Enqueue an ITEM Q."
   (let ( (head (aj-queue-head q) )
          (tail (aj-queue-tail q) )
          (c (list item) ) )
@@ -150,7 +150,7 @@
       (setf (aj-queue-tail q) c)))))
 
 (defun aj-queue-pop (q)
-  "dequeue"
+  "Dequeue Q."
   (if (null (aj-queue-head q))
       (error "[AceJump] Interal Error: Empty queue"))
 
@@ -175,7 +175,7 @@
 
 ;; custoize variable
 (defvar ace-jump-word-mode-use-query-char t
-  "If we need to ask for the query char before enter `ace-jump-word-mode'")
+  "If we need to ask for the query char before enter `ace-jump-word-mode'.")
 
 (defvar ace-jump-mode-case-fold case-fold-search
   "If non-nil, the ace-jump mode will ignore case.
@@ -186,19 +186,15 @@ The default value is set to the same as `case-fold-search'.")
   "The list that is used to store the history for jump back.")
 
 (defvar ace-jump-mode-mark-ring-max 100
-  "The max length of `ace-jump-mode-mark-ring'")
+  "The max length of `ace-jump-mode-mark-ring'.")
 
 
 (defvar ace-jump-mode-gray-background t
-  "By default, when there is more than one candidate, the ace
-jump mode will gray the background and then mark the possible
-candidate position. Set this to nil means do not gray
-background.")
+  "By default, when there is more than one candidate, the ace jump mode will gray the background and then mark the possible candidate position.  Set this to nil means do not gray background.")
 
 (defvar ace-jump-mode-scope 'global
-  "Define what is the scope that ace-jump-mode works.
-
-Now, there are four kinds of values for this:
+  "Define what is the scope that ace-jump-mode works."
+"Now, there are four kinds of values for this:
 1. 'global  : ace jump can work across any window and frame, this is also the default.
 2. 'frame   : ace jump will work for the all windows in current frame.
 3. 'visible : ace jump will work for all windows in visible frames.
@@ -206,9 +202,8 @@ Now, there are four kinds of values for this:
               This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-detect-punc t
-  "When this is non-nil, the ace jump word mode will detect the
-char that is not alpha or number. Then, if the query char is a
-printable punctuaction, we will use char mode to start the ace
+  "When this is non-nil, the ace jump word mode will detect the char that is not alpha or number."
+  "Then, if the query char is a printable punctuaction, we will use char mode to start the ace
 jump mode. If it is nil, an error will come up when
 non-alpha-number is given under word mode.")
 
