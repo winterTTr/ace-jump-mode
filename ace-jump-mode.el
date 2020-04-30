@@ -325,11 +325,7 @@ There is four possible return value:
    ;; digit
    ((and (>= query-char #x30) (<= query-char #x39))
     'digit)
-   ((or
-     ;; capital letter
-     (and (>= query-char #x41) (<= query-char #x5A))
-     ;; lowercase letter
-     (and (>= query-char #x61) (<= query-char #x7A)))
+   ((not (= (upcase query-char) (downcase query-char)))
     'alpha)
    ((or
      ;; tab
