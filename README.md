@@ -1,3 +1,14 @@
+Fork Information
+================
+
+This is a fork.
+It can be installed as described in *How to install it?* below, or using [straight.el](https://github.com/raxod502/straight.el) as follows:
+
+>(straight-override-recipe
+> (list 'ace-jump-mode (straight--convert-recipe 'ace-jump-mode)
+>       :fork '(:host github :repo "svenssonaxel/ace-jump-mode")))
+>(straight-use-package ',package)
+
 Ace Jump Mode
 =============
 

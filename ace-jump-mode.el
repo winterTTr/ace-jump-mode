@@ -7,6 +7,8 @@
 ;; Version  : 2.0.RC
 ;; Keywords : motion, location, cursor
 
+;; This fork URL : https://github.com/svenssonaxel/ace-jump-mode
+
 ;; This file is part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
