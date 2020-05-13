@@ -195,8 +195,9 @@ The default value is set to the same as `case-fold-search'.")
   "By default, when there is more than one candidate, the ace jump mode will gray the background and then mark the possible candidate position.  Set this to nil means do not gray background.")
 
 (defvar ace-jump-mode-scope 'global
-  "Define what is the scope that ace-jump-mode works."
-"Now, there are four kinds of values for this:
+  "Define what is the scope that ace-jump-mode works.
+
+Now, there are four kinds of values for this:
 1. 'global  : ace jump can work across any window and frame, this is also the default.
 2. 'frame   : ace jump will work for the all windows in current frame.
 3. 'visible : ace jump will work for all windows in visible frames.
@@ -204,8 +205,8 @@ The default value is set to the same as `case-fold-search'.")
               This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-detect-punc t
-  "When this is non-nil, the ace jump word mode will detect the char that is not alpha or number."
-  "Then, if the query char is a printable punctuaction, we will use char mode to start the ace
+  "When this is non-nil, the ace jump word mode will detect the char that is not alpha or number.
+Then, if the query char is a printable punctuaction, we will use char mode to start the ace
 jump mode. If it is nil, an error will come up when
 non-alpha-number is given under word mode.")
 
