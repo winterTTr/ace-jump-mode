@@ -1,13 +1,20 @@
 Fork Information
 ================
 
-This is a fork.
+This is a fork of [ace-jump-mode by winterTTr](https://github.com/winterTTr/ace-jump-mode).
 It can be installed as described in *How to install it?* below, or using [straight.el](https://github.com/raxod502/straight.el) as follows:
 
->(straight-override-recipe
-> (list 'ace-jump-mode (straight--convert-recipe 'ace-jump-mode)
->       :fork '(:host github :repo "svenssonaxel/ace-jump-mode")))
->(straight-use-package ',package)
+```elisp
+(straight-override-recipe
+ '(ace-jump-mode
+   :type git :flavor melpa
+   :host github :repo "svenssonaxel/ace-jump-mode"
+   :package "ace-jump-mode" :local-repo "ace-jump-mode"))
+(straight-use-package 'ace-jump-mode)
+```
+
+This fork is an amalgamation of [many different forks](https://github.com/winterTTr/ace-jump-mode/network/members).
+For a list of contributors, run `git log --format='%aN'|sort|uniq`
 
 Ace Jump Mode
 =============
