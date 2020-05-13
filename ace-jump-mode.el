@@ -204,6 +204,9 @@ Now, there are four kinds of values for this:
 3. 'window  : ace jump will only work on current window only.
               This is the same behavior for 1.0 version.")
 
+(defvar ace-jump-mode-limit-window-scope nil
+  "When not nil, limit the scope 'window to N numbers above and N numbers below.")
+
 (defvar ace-jump-mode-detect-punc t
   "When this is non-nil, the ace jump word mode will detect the char that is not alpha or number.
 Then, if the query char is a printable punctuaction, we will use char mode to start the ace
@@ -340,6 +343,12 @@ There is four possible return value:
    (t
     'other)))
 
+(defun ace-jump-point-at-relative-lines (n)
+  "Returns position of char at beginning of line N away from point"
+  (save-excursion
+    (beginning-of-line)
+    (forward-line n)
+    (point)))
 
 (defun ace-jump-search-candidate (re-query-string visual-area-list)
   "Search the RE-QUERY-STRING in current view, and return the candidate position list.
@@ -351,8 +360,14 @@ Every possible `match-beginning' will be collected.
 The returned value is a list of `aj-position' record."
   (loop for va in visual-area-list
         append (let* ((current-window (aj-visual-area-window va))
-                      (start-point (window-start current-window))
-                      (end-point   (window-end   current-window t)))
+                      (start-point (if ace-jump-mode-limit-window-scope
+				       (max (window-start current-window)
+					    (ace-jump-point-at-relative-lines (- ace-jump-mode-limit-window-scope)))
+				       (window-start current-window)))
+                      (end-point   (if ace-jump-mode-limit-window-scope
+				       (min (window-end current-window t)
+					    (ace-jump-point-at-relative-lines (1+ ace-jump-mode-limit-window-scope)))
+				     (window-end current-window t))))
                  (with-selected-window current-window
                    (save-excursion
                      (goto-char start-point)
