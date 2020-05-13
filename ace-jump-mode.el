@@ -291,6 +291,11 @@ that `ace-jump-search-candidate' will use as an additional filter.")
   "Face for background of AceJump motion"
   :group 'ace-jump)
 
+(defface ace-jump-face-terminal-background
+  '((t (:foreground "gray40")))
+  "Face for background of AceJump motion when in terminal"
+  :group 'ace-jump)
+
 
 (defface ace-jump-face-foreground
   '((((class color)) (:foreground "red" :underline nil :strike-through nil))
@@ -612,7 +617,9 @@ You can control whether use the case sensitive via `ace-jump-mode-case-fold'.
                                      (ol (make-overlay (window-start w)
                                                        (window-end w t)
                                                        b)))
-                                (overlay-put ol 'face 'ace-jump-face-background)
+                                (overlay-put ol 'face (if (display-graphic-p)
+                                                          'ace-jump-face-background
+                                                        'ace-jump-face-terminal-background))
                                 ol))))
 
       ;; construct search tree and populate overlay into tree
