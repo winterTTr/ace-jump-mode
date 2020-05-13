@@ -41,17 +41,14 @@ Here is a simple one for you to learn how to use ace jump, [Demo](http://dl.drop
 
 Usage: 
 
-"C-c SPC" ==>  ace-jump-word-mode
+"C-c SPC" ==>  ace-jump-word-or-line-mode
 
->enter first character of a word, select the highlighted key to move to it.
+>Go to a word by entering its first character, then selecting the highlighted key to move to it.
+>Go to a line by pressing return, then selecting the highlighted key to move to it.
 
 "C-u C-c SPC" ==>  ace-jump-char-mode
 
->enter a character for query, select the highlighted key to move to it.
-
-"C-u C-u C-c SPC" ==>  ace-jump-line-mode
-
->each non-empty line will be marked, select the highlighted key to move to it.
+>Go to a character by entering that character, then selecting the highlighted key to move to it.
 
 Thanks emacsrocks website, they make a great show to ace jump mode,
 refer to [here](http://www.youtube.com/watch?feature=player_embedded&v=UZkpmegySnc#!).

@@ -215,9 +215,8 @@ non-alpha-number is given under word mode.")
 
 
 (defvar ace-jump-mode-submode-list
-  '(ace-jump-word-mode
-    ace-jump-char-mode
-    ace-jump-line-mode)
+  '(ace-jump-word-or-line-mode
+    ace-jump-char-mode)
   "*The mode list when start ace jump mode.
 The sequence is the calling sequence when give prefix argument.
 
@@ -876,20 +875,35 @@ Marked each no empty line and move there"
 
 ;;;###autoload
 (defun ace-jump-char-or-line-mode (query-char)
+  "AceJump char or line mode.
+Like ace-jump-char-mode but will switch to ace-jump-line-mode if return is given as query char."
   (interactive (list (read-char "Query Char:")))
-  
-  (if (equal query-char #xD)
+
+  (if (equal query-char #xD) ;; If Query Char is return
       (ace-jump-line-mode)
     (ace-jump-char-mode query-char)))
+
+;;;###autoload
+(defun ace-jump-word-or-line-mode (head-char)
+  "AceJump word or line mode.
+Like ace-jump-word-mode but will switch to ace-jump-line-mode if return is given as head char.
+Only use with ace-jump-word-mode-use-query-char set to t"
+  (interactive (list (read-char "Head Char:")))
+
+  (if (equal query-char #xD) ;; If Query Char is return
+      (ace-jump-line-mode)
+    (ace-jump-word-mode head-char)))
 
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
   "AceJump mode is a minor mode for you to quick jump to a
 position in the curret view.
-   There is three submode now:
+   There are five submodes:
      `ace-jump-char-mode'
      `ace-jump-word-mode'
      `ace-jump-line-mode'
+     `ace-jump-char-or-line-mode'
+     `ace-jump-word-or-line-mode'
 
 You can specify the sequence about which mode should enter
 by customize `ace-jump-mode-submode-list'.
