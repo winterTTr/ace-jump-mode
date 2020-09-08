@@ -1,3 +1,21 @@
+Fork Information
+================
+
+This is a fork of [ace-jump-mode by winterTTr](https://github.com/winterTTr/ace-jump-mode).
+It can be installed as described in *How to install it?* below, or using [straight.el](https://github.com/raxod502/straight.el) as follows:
+
+```elisp
+(straight-override-recipe
+ '(ace-jump-mode
+   :type git :flavor melpa
+   :host github :repo "svenssonaxel/ace-jump-mode"
+   :package "ace-jump-mode" :local-repo "ace-jump-mode"))
+(straight-use-package 'ace-jump-mode)
+```
+
+This fork is an amalgamation of [many different forks](https://github.com/winterTTr/ace-jump-mode/network/members).
+For a list of contributors, run `git log --format='%aN'|sort|uniq`
+
 Ace Jump Mode
 =============
 
@@ -23,17 +41,14 @@ Here is a simple one for you to learn how to use ace jump, [Demo](http://dl.drop
 
 Usage: 
 
-"C-c SPC" ==>  ace-jump-word-mode
+"C-c SPC" ==>  ace-jump-word-or-line-mode
 
->enter first character of a word, select the highlighted key to move to it.
+>Go to a word by entering its first character, then selecting the highlighted key to move to it.
+>Go to a line by pressing return, then selecting the highlighted key to move to it.
 
 "C-u C-c SPC" ==>  ace-jump-char-mode
 
->enter a character for query, select the highlighted key to move to it.
-
-"C-u C-u C-c SPC" ==>  ace-jump-line-mode
-
->each non-empty line will be marked, select the highlighted key to move to it.
+>Go to a character by entering that character, then selecting the highlighted key to move to it.
 
 Thanks emacsrocks website, they make a great show to ace jump mode,
 refer to [here](http://www.youtube.com/watch?feature=player_embedded&v=UZkpmegySnc#!).
@@ -42,37 +57,36 @@ refer to [here](http://www.youtube.com/watch?feature=player_embedded&v=UZkpmegyS
 How to install it?
 ------------------
 
-    ;;
-    ;; ace jump mode major function
-    ;; 
-    (add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
-    (autoload
-      'ace-jump-mode
-      "ace-jump-mode"
-      "Emacs quick move minor mode"
-      t)
-    ;; you can select the key you prefer to
-    (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+```elisp
+;;
+;; ace jump mode major function
+;;
+(add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
+(autoload
+  'ace-jump-mode
+  "ace-jump-mode"
+  "Emacs quick move minor mode"
+  t)
+;; you can select the key you prefer to
+(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 
+;;
+;; enable a more powerful jump back function from ace jump mode
+;;
+(autoload
+  'ace-jump-mode-pop-mark
+  "ace-jump-mode"
+  "Ace jump back:-)"
+  t)
+(eval-after-load 'ace-jump-mode
+  '(ace-jump-mode-enable-mark-sync))
+(define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
-
-    ;; 
-    ;; enable a more powerful jump back function from ace jump mode
-    ;;
-    (autoload
-      'ace-jump-mode-pop-mark
-      "ace-jump-mode"
-      "Ace jump back:-)"
-      t)
-    (eval-after-load "ace-jump-mode"
-      '(ace-jump-mode-enable-mark-sync))
-    (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
-    
-    ;;If you use viper mode :
-    (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
-    ;;If you use evil
-    (define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
-
+;;If you use viper mode :
+(define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
+;;If you use evil
+(define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
+```
 
 I want to know more about customized configuration?
 ---------------------------------------------------
