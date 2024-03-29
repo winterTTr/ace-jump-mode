@@ -929,11 +929,12 @@ Like ace-jump-char-mode but will switch to ace-jump-line-mode if return is given
 ;;;###autoload
 (defun ace-jump-word-or-line-mode (head-char)
   "AceJump word or line mode.
-Like ace-jump-word-mode but will switch to ace-jump-line-mode if return is given as head char.
-Only use with ace-jump-word-mode-use-query-char set to t"
+Like `ace-jump-word-mode' but will switch to `ace-jump-line-mode' if
+return is given as HEAD-CHAR. Only use with
+`ace-jump-word-mode-use-query-char' set to t"
   (interactive (list (read-char "Head Char:")))
 
-  (if (equal query-char #xD) ;; If Query Char is return
+  (if (equal head-char #xD) ;; If head-char is return
       (ace-jump-line-mode)
     (ace-jump-word-mode head-char)))
 
