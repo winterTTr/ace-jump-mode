@@ -372,9 +372,12 @@ The returned value is a list of `aj-position' record."
                      (goto-char start-point)
                      (let ((case-fold-search ace-jump-mode-case-fold))
                        (cl-loop while (re-search-forward re-query-string nil t)
-                             until (or
-                                    (> (point) end-point)
-                                    (eobp))
+                             ;; `window-end' is the first position out of
+                             ;; view.  Check where the match starts, not
+                             ;; where it ends: a match may end right at
+                             ;; the end of the buffer.  This also skips
+                             ;; "^" on the empty line after a final newline.
+                             until (>= (match-beginning 0) end-point)
                              if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
                                   (or (null ace-jump-search-filter)
                                       (ignore-errors
