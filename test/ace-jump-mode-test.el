@@ -1,4 +1,4 @@
-;;; ace-jump-mode-test.el --- Tests for ace-jump-mode  -*- lexical-binding: t -*-
+;;; ace-jump-mode-test.el --- Tests for ace-jump-mode  -*- lexical-binding: t; coding: utf-8 -*-
 
 ;;; Commentary:
 
