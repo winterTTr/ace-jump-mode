@@ -504,6 +504,53 @@ a char jump."
         (should (= (point) 1))
         (should-not ace-jump-current-mode)))))
 
+;;;; The mark
+
+(ert-deftest ace-jump-test-jump-sets-mark ()
+  "A jump sets the mark where it started, as other long motions do."
+  (ace-jump-test-with-buffer "a1 a2 a3"
+    (let ((transient-mark-mode t))
+      (goto-char 2)
+      (ace-jump-char-mode ?a)
+      (ace-jump-test-press ?c)
+      (should (= (point) 7))
+      (should (= (mark t) 2))
+      (should-not (region-active-p)))))
+
+(ert-deftest ace-jump-test-jump-extends-active-region ()
+  "With the region active, a jump leaves the mark alone, as isearch does.
+So the region stretches from where it was started to where the jump
+lands."
+  (ace-jump-test-with-buffer "a1 a2 a3 xyz"
+    (let ((transient-mark-mode t))
+      (set-mark 1)
+      (goto-char 4)
+      ;; chosen by a label
+      (ace-jump-char-mode ?a)
+      (ace-jump-test-press ?c)
+      (should (= (point) 7))
+      (should (= (mark t) 1))
+      (should (region-active-p))
+      ;; a single candidate, jumped to at once
+      (ace-jump-char-mode ?y)
+      (should (= (point) 11))
+      (should (= (mark t) 1))
+      (should (region-active-p))
+      ;; the jumps are still remembered for jumping back
+      (ace-jump-mode-pop-mark)
+      (should (= (point) 7)))))
+
+(ert-deftest ace-jump-test-jump-sets-mark-without-transient-mark-mode ()
+  "Without Transient Mark mode there is no active region to keep."
+  (ace-jump-test-with-buffer "a1 a2 a3"
+    (let ((transient-mark-mode nil))
+      (set-mark 1)
+      (goto-char 4)
+      (ace-jump-char-mode ?a)
+      (ace-jump-test-press ?c)
+      (should (= (point) 7))
+      (should (= (mark t) 4)))))
+
 ;;;; Jumping back
 
 (ert-deftest ace-jump-test-pop-mark ()

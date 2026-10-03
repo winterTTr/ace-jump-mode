@@ -742,9 +742,13 @@ POSITION is a `aj-position' structure storing the position information."
     ))
 
 (defun ace-jump-push-mark ()
-  "Push the current position information onto the `ace-jump-mode-mark-ring'."
+  "Push the current position information onto the `ace-jump-mode-mark-ring'.
+Also push it onto the Emacs mark ring, unless the region is active:
+then the mark stays where it is, and the jump extends the region, as
+`isearch' does."
   ;; add mark to the emacs basic push mark
-  (push-mark (point) t)
+  (unless (and transient-mark-mode mark-active)
+    (push-mark (point) t))
   ;; we also push the mark on the `ace-jump-mode-mark-ring', which has
   ;; more information for better jump back
   (let ((pos (make-aj-position :offset (point)
