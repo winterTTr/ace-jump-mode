@@ -597,12 +597,17 @@ You can constrol whether use the case sensitive via
      ;; cannot find any one
      ((null candidate-list)
       (setq ace-jump-current-mode nil)
+      (setq ace-jump-query-char nil)
       (error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((eq (cdr candidate-list) nil)
       (ace-jump-push-mark)
       (run-hooks 'ace-jump-mode-before-jump-hook)
       (ace-jump-jump-to (car candidate-list))
+      ;; AceJump mode is not entered, so `ace-jump-done' will not
+      ;; clear the status flags: do it here
+      (setq ace-jump-current-mode nil)
+      (setq ace-jump-query-char nil)
       (message "[AceJump] One candidate, move to it directly")
       (run-hooks 'ace-jump-mode-end-hook))
      ;; more than one, we need to enter AceJump mode
