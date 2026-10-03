@@ -369,33 +369,33 @@ You can control whether use the case sensitive or not by
 Every possible `match-beginning' will be collected.
 The returned value is a list of `aj-position' record."
   (cl-loop for va in visual-area-list
-        append (let* ((current-window (aj-visual-area-window va))
-                      (start-point (window-start current-window))
-                      (end-point   (window-end   current-window t)))
-                 (with-selected-window current-window
-                   (save-excursion
-                     (goto-char start-point)
-                     (let ((case-fold-search ace-jump-mode-case-fold))
-                       (cl-loop while (re-search-forward re-query-string nil t)
-                             ;; `window-end' is the first position out of
-                             ;; view.  Check where the match starts, not
-                             ;; where it ends: a match may end right at
-                             ;; the end of the buffer.  This also skips
-                             ;; "^" on the empty line after a final newline.
-                             until (>= (match-beginning 0) end-point)
-                             if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
-                                  (or (null ace-jump-search-filter)
-                                      (ignore-errors
-                                        (funcall ace-jump-search-filter))))
-                             collect (make-aj-position :offset (match-beginning 0)
-                                                       :visual-area va)
-                             ;; when we use "^" to search line mode,
-                             ;; re-search-backward will not move one
-                             ;; char after search success, as line
-                             ;; begin is not a valid visible char.
-                             ;; We need to help it to move forward.
-                             do (if (string-equal re-query-string "^")
-                                    (goto-char (1+ (match-beginning 0)))))))))))
+           append (let* ((current-window (aj-visual-area-window va))
+                         (start-point (window-start current-window))
+                         (end-point   (window-end   current-window t)))
+                    (with-selected-window current-window
+                      (save-excursion
+                        (goto-char start-point)
+                        (let ((case-fold-search ace-jump-mode-case-fold))
+                          (cl-loop while (re-search-forward re-query-string nil t)
+                                   ;; `window-end' is the first position out of
+                                   ;; view.  Check where the match starts, not
+                                   ;; where it ends: a match may end right at
+                                   ;; the end of the buffer.  This also skips
+                                   ;; "^" on the empty line after a final newline.
+                                   until (>= (match-beginning 0) end-point)
+                                   if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
+                                           (or (null ace-jump-search-filter)
+                                               (ignore-errors
+                                                 (funcall ace-jump-search-filter))))
+                                   collect (make-aj-position :offset (match-beginning 0)
+                                                             :visual-area va)
+                                   ;; when we use "^" to search line mode,
+                                   ;; re-search-backward will not move one
+                                   ;; char after search success, as line
+                                   ;; begin is not a valid visible char.
+                                   ;; We need to help it to move forward.
+                                   do (if (string-equal re-query-string "^")
+                                          (goto-char (1+ (match-beginning 0)))))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
@@ -421,7 +421,7 @@ while a child node list when type is `branch'"
           (progn
             (setf (cdr node)
                   (cl-loop for i from 1 to left-leaf-node
-                        collect (cons 'leaf nil)))
+                           collect (cons 'leaf nil)))
             ;; so this should be the last action for while
             (setq left-leaf-node 0))
         ;; the child can not cover the left leaf
@@ -430,9 +430,9 @@ while a child node list when type is `branch'"
           ;; the oppotunity to become 'branch node if necessary
           (setf (cdr node)
                 (cl-loop for i from 1 to max-child-node
-                      collect (let ((n (cons 'leaf nil)))
-                                (aj-queue-push n q)
-                                n)))
+                         collect (let ((n (cons 'leaf nil)))
+                                   (aj-queue-push n q)
+                                   n)))
           (setq left-leaf-node (- left-leaf-node max-child-node)))))
     ;; return the root node
     root))
@@ -464,34 +464,34 @@ node and call LEAF-FUNC on each leaf node"
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
   "Populate the overlay to search tree, every leaf will give one overlay"
   
-  (let* (;; create the locally dynamic variable for the following function
-                 (position-list candidate-list)
+  (let* (;; the candidates left to place, consumed by the closure below
+         (position-list candidate-list)
                  
-                 ;; make the function to create overlay for each leaf node,
-                 ;; here we only create each overlay for each candidate
-                 ;; position, , but leave the 'display property to be empty,
-                 ;; which will be fill in "update-overlay" function
-                 (func-create-overlay (lambda (node)
-                                        (let* ((p (car position-list))
-                                               (o (aj-position-offset p))
-                                               (w (aj-position-window p))
-                                               (b (aj-position-buffer p))
-                                               ;; create one char overlay
-                                               (ol (make-overlay o (1+ o) b)))
-                                          ;; update leaf node to remember the ol
-                                          (setf (cdr node) ol)
-                                          (overlay-put ol 'face 'ace-jump-face-foreground)
-                                          ;; this is important, because sometimes the different
-                                          ;; window may dispaly the same buffer, in that case, 
-                                          ;; overlay for different window (but the same buffer)
-                                          ;; will show at the same time on both window
-                                          ;; So we make it only on the specific window
-                                          (overlay-put ol 'window w)
-                                          ;; associate the aj-position data with overlay
-                                          ;; so that we can use it to do the final jump
-                                          (overlay-put ol 'aj-data p)
-                                          ;; next candidate node
-                                          (setq position-list (cdr position-list))))))
+         ;; make the function to create overlay for each leaf node,
+         ;; here we only create each overlay for each candidate
+         ;; position, , but leave the 'display property to be empty,
+         ;; which will be fill in "update-overlay" function
+         (func-create-overlay (lambda (node)
+                                (let* ((p (car position-list))
+                                       (o (aj-position-offset p))
+                                       (w (aj-position-window p))
+                                       (b (aj-position-buffer p))
+                                       ;; create one char overlay
+                                       (ol (make-overlay o (1+ o) b)))
+                                  ;; update leaf node to remember the ol
+                                  (setf (cdr node) ol)
+                                  (overlay-put ol 'face 'ace-jump-face-foreground)
+                                  ;; this is important, because sometimes the different
+                                  ;; window may dispaly the same buffer, in that case,
+                                  ;; overlay for different window (but the same buffer)
+                                  ;; will show at the same time on both window
+                                  ;; So we make it only on the specific window
+                                  (overlay-put ol 'window w)
+                                  ;; associate the aj-position data with overlay
+                                  ;; so that we can use it to do the final jump
+                                  (overlay-put ol 'aj-data p)
+                                  ;; next candidate node
+                                  (setq position-list (cdr position-list))))))
     (ace-jump-tree-preorder-traverse tree func-create-overlay)
     tree))
 
@@ -512,47 +512,47 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
   "Update overlay `display' property using each name in KEYS."
-  (let* (;; create dynamic variable for following function
-                 (key ?\0)
-                 ;; populdate each leaf node to be the specific key,
-                 ;; this only update 'display' property of overlay,
-                 ;; so that user can see the key from screen and select
-                 (func-update-overlay
-                  (lambda (node)
-                    (let ((ol (cdr node)))
-                      (overlay-put
-                       ol
-                       'display
-                       (concat (make-string 1 key)
-                               (let* ((pos (overlay-get ol 'aj-data))
-                                      (subs (ace-jump-buffer-substring pos)))
-                                 (cond
-                                  ;; when tab, we use more space to prevent screen
-                                  ;; from messing up, as wide as a tab is in
-                                  ;; the candidate's buffer
-                                  ((string-equal subs "\t")
-                                   (make-string (1- (buffer-local-value
-                                                     'tab-width
-                                                     (aj-position-buffer pos)))
-                                                ? ))
-                                  ;; when enter, we need to add one more enter
-                                  ;; to make the screen not change
-                                  ((string-equal subs "\n")
-                                   "\n")
-                                  (t
-                                   ;; there are wide-width characters
-                                   ;; so, we need paddings
-                                   (make-string (max 0 (1- (string-width subs))) ? ))))))))))
+  (let* (;; the key of the subtree being labeled, set by the loop below
+         (key ?\0)
+         ;; populdate each leaf node to be the specific key,
+         ;; this only update 'display' property of overlay,
+         ;; so that user can see the key from screen and select
+         (func-update-overlay
+          (lambda (node)
+            (let ((ol (cdr node)))
+              (overlay-put
+               ol
+               'display
+               (concat (make-string 1 key)
+                       (let* ((pos (overlay-get ol 'aj-data))
+                              (subs (ace-jump-buffer-substring pos)))
+                         (cond
+                          ;; when tab, we use more space to prevent screen
+                          ;; from messing up, as wide as a tab is in
+                          ;; the candidate's buffer
+                          ((string-equal subs "\t")
+                           (make-string (1- (buffer-local-value
+                                             'tab-width
+                                             (aj-position-buffer pos)))
+                                        ? ))
+                          ;; when enter, we need to add one more enter
+                          ;; to make the screen not change
+                          ((string-equal subs "\n")
+                           "\n")
+                          (t
+                           ;; there are wide-width characters
+                           ;; so, we need paddings
+                           (make-string (max 0 (1- (string-width subs))) ? ))))))))))
     (cl-loop for k in keys
-          for n in (cdr tree)
-          do (progn
-               ;; update "key" variable so that the function can use
-               ;; the correct context
-               (setq key k)
-               (if (eq (car n) 'branch)
-                   (ace-jump-tree-preorder-traverse n
-                                                    func-update-overlay)
-                 (funcall func-update-overlay n))))))
+             for n in (cdr tree)
+             do (progn
+                  ;; update "key" variable so that the function can use
+                  ;; the correct context
+                  (setq key k)
+                  (if (eq (car n) 'branch)
+                      (ace-jump-tree-preorder-traverse n
+                                                       func-update-overlay)
+                    (funcall func-update-overlay n))))))
 
 
 
@@ -561,22 +561,22 @@ node and call LEAF-FUNC on each leaf node"
   (cond
    ((eq ace-jump-mode-scope 'global)
     (cl-loop for f in (frame-list)
-          append (cl-loop for w in (window-list f)
-                       collect (make-aj-visual-area :buffer (window-buffer w)
-                                                    :window w
-                                                    :frame f))))
+             append (cl-loop for w in (window-list f)
+                             collect (make-aj-visual-area :buffer (window-buffer w)
+                                                          :window w
+                                                          :frame f))))
    ((eq ace-jump-mode-scope 'visible)
     (cl-loop for f in (frame-list)
-          if (eq t (frame-visible-p f))
-          append (cl-loop for w in (window-list f)
-                       collect (make-aj-visual-area :buffer (window-buffer w)
-                                                    :window w
-                                                    :frame f))))
+             if (eq t (frame-visible-p f))
+             append (cl-loop for w in (window-list f)
+                             collect (make-aj-visual-area :buffer (window-buffer w)
+                                                          :window w
+                                                          :frame f))))
    ((eq ace-jump-mode-scope 'frame)
     (cl-loop for w in (window-list (selected-frame))
-          collect (make-aj-visual-area :buffer (window-buffer w)
-                                       :window w
-                                       :frame (selected-frame))))
+             collect (make-aj-visual-area :buffer (window-buffer w)
+                                          :window w
+                                          :frame (selected-frame))))
    ((eq ace-jump-mode-scope 'window)
     (list 
      (make-aj-visual-area :buffer (current-buffer)
@@ -627,13 +627,13 @@ You can constrol whether use the case sensitive via
       (if ace-jump-mode-gray-background
           (setq ace-jump-background-overlay-list
                 (cl-loop for va in visual-area-list
-                      collect (let* ((w (aj-visual-area-window va))
-                                     (b (aj-visual-area-buffer va))
-                                     (ol (make-overlay (window-start w)
-                                                       (window-end w)
-                                                       b)))
-                                (overlay-put ol 'face 'ace-jump-face-background)
-                                ol))))
+                         collect (let* ((w (aj-visual-area-window va))
+                                        (b (aj-visual-area-buffer va))
+                                        (ol (make-overlay (window-start w)
+                                                          (window-end w)
+                                                          b)))
+                                   (overlay-put ol 'face 'ace-jump-face-background)
+                                   ol))))
 
       ;; construct search tree and populate overlay into tree
       (setq ace-jump-search-tree
@@ -953,9 +953,9 @@ never gets a chance to translate it: do it here."
   "Move cursor based on user input.
 KEY is the move key to use, the key that invoked the command by default."
   (interactive)
-  (let* ((index (let ((ret (cl-position (or key (aref (this-command-keys) 0))
-                                        ace-jump-mode-move-keys)))
-                  (if ret ret (length ace-jump-mode-move-keys))))
+  (let* ((index (or (cl-position (or key last-command-event)
+                                 ace-jump-mode-move-keys)
+                    (length ace-jump-mode-move-keys)))
          (node (nth index (cdr ace-jump-search-tree))))
     (cond
      ;; we do not find key in search tree. This can happen, for
@@ -1009,7 +1009,7 @@ KEY is the move key to use, the key that invoked the command by default."
 
   ;; delete background overlay
   (cl-loop for ol in ace-jump-background-overlay-list
-        do (delete-overlay ol))
+           do (delete-overlay ol))
   (setq ace-jump-background-overlay-list nil)
 
 
@@ -1043,16 +1043,15 @@ one argument, which will be every element in the list.
 Such as : (lambda (x) (equal x 1)) "
   (let (true-list false-list)
     (cl-loop for e in l
-          do (if (funcall pred e)
-                 (setq true-list (cons e true-list))
-               (setq false-list (cons e false-list))))
+             do (if (funcall pred e)
+                    (setq true-list (cons e true-list))
+                  (setq false-list (cons e false-list))))
     (nconc (nreverse false-list)
            (and true-list (nreverse true-list)))))
 
 (defun ace-jump-move-first-to-end-if (l pred)
   "Only move the first found one to the end of list"
-  (let ((pred pred)
-                found)
+  (let (found)
     (ace-jump-move-to-end-if l
                              (lambda (x)
                                (if found
