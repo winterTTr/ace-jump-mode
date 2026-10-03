@@ -919,7 +919,8 @@ Marked each no empty line and move there"
 ;;;###autoload
 (defun ace-jump-char-or-line-mode (query-char)
   "AceJump char or line mode.
-Like ace-jump-char-mode but will switch to ace-jump-line-mode if return is given as query char."
+Like `ace-jump-char-mode' but will switch to `ace-jump-line-mode' if
+return is given as QUERY-CHAR."
   (interactive (list (read-char "Query Char:")))
 
   (if (equal query-char #xD) ;; If Query Char is return

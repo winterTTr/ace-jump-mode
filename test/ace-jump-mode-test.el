@@ -27,6 +27,8 @@
     (define-key map [f5] #'ace-jump-char-mode)
     (define-key map [f6] #'ace-jump-word-mode)
     (define-key map [f7] #'ace-jump-line-mode)
+    (define-key map [f8] #'ace-jump-char-or-line-mode)
+    (define-key map [f9] #'ace-jump-word-or-line-mode)
     map)
   "Local map of the test buffers: keys to start AceJump with.")
 
@@ -205,6 +207,29 @@ not stop it."
         (let ((current-prefix-arg (car case)))
           (call-interactively #'ace-jump-mode)))
       (should (equal (cons (car case) ace-jump-current-mode) case)))))
+
+(ert-deftest ace-jump-test-or-line-modes ()
+  "RET as the query char starts line mode, any other char or word mode."
+  (dolist (case '((ace-jump-char-or-line-mode ?a ace-jump-char-mode)
+                  (ace-jump-char-or-line-mode ?\r ace-jump-line-mode)
+                  (ace-jump-word-or-line-mode ?a ace-jump-word-mode)
+                  (ace-jump-word-or-line-mode ?\r ace-jump-line-mode)))
+    (ace-jump-test-with-buffer "a1 a2\nb3\nc4"
+      (funcall (nth 0 case) (nth 1 case))
+      (should (equal (list (nth 0 case) (nth 1 case) ace-jump-current-mode)
+                     case)))))
+
+(ert-deftest ace-jump-test-or-line-modes-by-typing ()
+  "The same, typed; in a graphical frame RET is the `return' event."
+  (ace-jump-test-with-buffer "a1 a2\nb3\nc4"
+    (ace-jump-test-type [f8 return ?b])
+    (should (= (point) 7))
+    (goto-char (point-min))
+    (ace-jump-test-type [f9 ?\r ?c])
+    (should (= (point) 10))
+    (goto-char (point-min))
+    (ace-jump-test-type [f9 ?a ?b])
+    (should (= (point) 4))))
 
 (ert-deftest ace-jump-test-labels ()
   "Each candidate gets a label from `ace-jump-mode-move-keys', in order."
