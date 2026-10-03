@@ -216,19 +216,21 @@ non-alpha-number is given under word mode.")
 
 (defvar ace-jump-mode-submode-list
   '(ace-jump-word-or-line-mode
-    ace-jump-char-mode)
+    ace-jump-char-mode
+    ace-jump-line-mode)
   "*The mode list when start ace jump mode.
 The sequence is the calling sequence when give prefix argument.
 
 Such as:
   If you use the default sequence, which is
-      \\='(ace-jump-word-mode
+      \\='(ace-jump-word-or-line-mode
         ace-jump-char-mode
         ace-jump-line-mode)
 and using key to start up ace jump mode, such as `C-c SPC',
 then the usage to start each mode is as below:
 
-   C-c SPC           ==> ace-jump-word-mode
+   C-c SPC           ==> ace-jump-word-or-line-mode
+                         (C-c SPC RET for line mode)
    C-u C-c SPC       ==> ace-jump-char-mode
    C-u C-u C-c SPC   ==> ace-jump-line-mode
 
@@ -236,6 +238,8 @@ Currently, the valid submode is:
    `ace-jump-word-mode'
    `ace-jump-char-mode'
    `ace-jump-line-mode'
+   `ace-jump-word-or-line-mode'
+   `ace-jump-char-or-line-mode'
 
 ")
 
@@ -931,9 +935,12 @@ return is given as QUERY-CHAR."
 (defun ace-jump-word-or-line-mode (head-char)
   "AceJump word or line mode.
 Like `ace-jump-word-mode' but will switch to `ace-jump-line-mode' if
-return is given as HEAD-CHAR. Only use with
-`ace-jump-word-mode-use-query-char' set to t"
-  (interactive (list (read-char "Head Char:")))
+return is given as HEAD-CHAR.  With `ace-jump-word-mode-use-query-char'
+set to nil, no head char is asked for, and all the words are marked,
+as `ace-jump-word-mode' does."
+  (interactive (list (if ace-jump-word-mode-use-query-char
+                         (read-char "Head Char:")
+                       nil)))
 
   (if (equal head-char #xD) ;; If head-char is return
       (ace-jump-line-mode)

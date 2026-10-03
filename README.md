@@ -32,6 +32,10 @@ Usage:
 
 >Go to a character by entering that character, then selecting the highlighted key to move to it.
 
+"C-u C-u C-c SPC" ==>  ace-jump-line-mode
+
+>Go to a line by selecting the highlighted key to move to it.
+
 Thanks emacsrocks website, they make a great show to ace jump mode,
 refer to [here](http://www.youtube.com/watch?feature=player_embedded&v=UZkpmegySnc#!).
 
