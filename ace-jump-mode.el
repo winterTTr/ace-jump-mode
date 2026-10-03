@@ -632,7 +632,7 @@ You can control whether use the case sensitive via
      ((null candidate-list)
       (setq ace-jump-current-mode nil)
       (setq ace-jump-query-char nil)
-      (error "[AceJump] No one found"))
+      (user-error "[AceJump] No one found"))
      ;; we only find one, so move to it directly
      ((eq (cdr candidate-list) nil)
       (unwind-protect
@@ -773,7 +773,7 @@ then the mark stays where it is, and the jump extends the region, as
     
   (if (null ace-jump-mode-mark-ring)
       ;; no valid history exist
-      (error "[AceJump] No more history"))
+      (user-error "[AceJump] No more history"))
 
   (if ace-jump-sync-emacs-mark-ring
       (let ((p (car ace-jump-mode-mark-ring)))
@@ -864,7 +864,7 @@ word-mode and char-mode"
   (if ace-jump-current-mode (ace-jump-done))
   
   (if (eq (ace-jump-char-category query-char) 'other)
-    (error "[AceJump] Non-printable character"))
+    (user-error "[AceJump] Non-printable character"))
 
   ;; others : digit , alpha, punc
   (setq ace-jump-query-char query-char)
@@ -902,13 +902,13 @@ buffer."
         'punc)
     ;; we do not query punctuation under word mode
     (if (null ace-jump-mode-detect-punc)
-        (error "[AceJump] Not a valid word constituent"))
+        (user-error "[AceJump] Not a valid word constituent"))
     ;; we will use char mode to continue search
     (setq ace-jump-query-char head-char)
     (setq ace-jump-current-mode 'ace-jump-char-mode)
     (ace-jump-do (regexp-quote (make-string 1 head-char))))
    (t
-    (error "[AceJump] Non-printable character"))))
+    (user-error "[AceJump] Non-printable character"))))
 
 
 ;;;###autoload
@@ -978,7 +978,7 @@ You can constrol whether use the case sensitive via
   (let ((index (/ prefix 4))
         (submode-list-length (length ace-jump-mode-submode-list)))
     (if (< index 0)
-        (error "[AceJump] Invalid prefix command"))
+        (user-error "[AceJump] Invalid prefix command"))
     (if (>= index submode-list-length)
         (setq index (1- submode-list-length)))
     (call-interactively (nth index ace-jump-mode-submode-list))))

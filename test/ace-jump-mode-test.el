@@ -409,6 +409,46 @@ a char jump."
     (should-not ace-jump-current-mode)
     (should-not ace-jump-query-char)))
 
+(defun ace-jump-test-signal (thunk)
+  "Return the error THUNK signals, as (TYPE MESSAGE)."
+  (let ((err (should-error (funcall thunk))))
+    (list (car err) (error-message-string err))))
+
+(ert-deftest ace-jump-test-user-errors ()
+  "What the user does wrong is a `user-error', a broken setup an `error'.
+A `user-error' gives no backtrace with `debug-on-error'."
+  (ace-jump-test-with-buffer "abc"
+    (dolist (case
+             `((user-error "No one found"
+                           ,(lambda () (ace-jump-char-mode ?q)))
+               (user-error "Non-printable character"
+                           ,(lambda () (ace-jump-char-mode ?\C-a)))
+               (user-error "Non-printable character"
+                           ,(lambda () (ace-jump-word-mode ?\C-a)))
+               (user-error "Not a valid word constituent"
+                           ,(lambda ()
+                              (let ((ace-jump-mode-detect-punc nil))
+                                (ace-jump-word-mode ?,))))
+               (user-error "Invalid prefix command"
+                           ,(lambda ()
+                              (let ((current-prefix-arg -4))
+                                (call-interactively #'ace-jump-mode))))
+               (user-error "No more history" ace-jump-mode-pop-mark)
+               (error "Invalid move keys"
+                      ,(lambda ()
+                         (let ((ace-jump-mode-move-keys '(?a)))
+                           (ace-jump-char-mode ?a))))
+               (error "Invalid ace-jump-mode-scope"
+                      ,(lambda ()
+                         (let ((ace-jump-mode-scope 'nowhere))
+                           (ace-jump-char-mode ?a))))))
+      (pcase-let ((`(,type ,expected ,thunk) case))
+        (ert-info (expected)
+          (pcase-let ((`(,signalled ,text) (ace-jump-test-signal thunk)))
+            (should (eq signalled type))
+            (should (string-match-p (regexp-quote expected) text)))))
+      (ace-jump-test-reset))))
+
 (ert-deftest ace-jump-test-failed-jump-cleans-up ()
   "If the jump signals an error, AceJump is left all the same."
   (ace-jump-test-with-buffer "a1 a2 a3"
