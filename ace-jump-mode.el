@@ -32,13 +32,13 @@
 
 ;; What's this?
 ;;
-;; It is a minor mode for Emacs. It can help you to move your cursor
-;; to ANY position in emacs by using only 3 times key press. 
+;; It is a minor mode for Emacs.  It can help you to move your cursor
+;; to ANY position in Emacs by using only 3 times key press.
 
 ;; Where does ace jump mode come from ?
 ;;
 ;; I firstly see such kind of moving style is in a vim plugin called
-;; EasyMotion. It really attract me a lot. So I decide to write
+;; EasyMotion.  It really attract me a lot.  So I decide to write
 ;; one for Emacs and MAKE IT BETTER.
 ;;
 ;; So I want to thank to :
@@ -48,9 +48,9 @@
 
 ;; What's ace-jump-mode ?
 ;;
-;; ace-jump-mode is an fast/direct cursor location minor mode. It will
+;; ace-jump-mode is an fast/direct cursor location minor mode.  It will
 ;; create the N-Branch search tree internal and marks all the possible
-;; position with predefined keys in within the whole emacs view.
+;; position with predefined keys in within the whole Emacs view.
 ;; Allowing you to move to the character/word/line almost directly.
 ;;
 
@@ -61,7 +61,7 @@
 ;; ----------------------------------------------------------
 ;; ;;
 ;; ;; ace jump mode major function
-;; ;; 
+;; ;;
 ;; (add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
 ;; (autoload
 ;;   'ace-jump-mode
@@ -71,7 +71,7 @@
 ;; ;; you can select the key you prefer to
 ;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
 ;;
-;; ;; 
+;; ;;
 ;; ;; enable a more powerful jump back function from ace jump mode
 ;; ;;
 ;; (autoload
@@ -82,7 +82,7 @@
 ;; (eval-after-load 'ace-jump-mode
 ;;   '(ace-jump-mode-enable-mark-sync))
 ;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
-;; 
+;;
 ;; ;;If you use viper mode :
 ;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
 ;; ;;If you use evil
@@ -111,19 +111,19 @@
 (cl-defstruct ace-jump--position offset visual-area)
 
 (defmacro ace-jump--position-buffer (position)
-  "Get the buffer object from `ace-jump--position'."
+  "Return the buffer of POSITION, an `ace-jump--position'."
   `(ace-jump--visual-area-buffer (ace-jump--position-visual-area ,position)))
 
 (defmacro ace-jump--position-window (position)
-  "Get the window object from `ace-jump--position'."
+  "Return the window of POSITION, an `ace-jump--position'."
   `(ace-jump--visual-area-window (ace-jump--position-visual-area ,position)))
 
 (defmacro ace-jump--position-frame (position)
-  "Get the frame object from `ace-jump--position'."
+  "Return the frame of POSITION, an `ace-jump--position'."
   `(ace-jump--visual-area-frame (ace-jump--position-visual-area ,position)))
 
 (defmacro ace-jump--position-recover-buffer (position)
-  "Get the recover-buffer object from `ace-jump--position'."
+  "Return the recover-buffer of POSITION, an `ace-jump--position'."
   `(ace-jump--visual-area-recover-buffer (ace-jump--position-visual-area ,position)))
 
 
@@ -142,7 +142,7 @@
 (cl-defstruct ace-jump--queue head tail)
 
 (defun ace-jump--queue-push (item q)
-  "enqueue"
+  "Add ITEM to the end of the queue Q."
   (let ((c (list item)))
     (cond
      ((null (ace-jump--queue-head q))
@@ -153,7 +153,7 @@
       (setf (ace-jump--queue-tail q) c)))))
 
 (defun ace-jump--queue-pop (q)
-  "dequeue"
+  "Remove the first item of the queue Q and return it."
   (if (null (ace-jump--queue-head q))
       (error "[AceJump] Internal Error: Empty queue"))
 
@@ -183,7 +183,8 @@
   :group 'convenience)
 
 (defcustom ace-jump-word-mode-use-query-char t
-  "If we need to ask for the query char before enter `ace-jump-word-mode'"
+  "Non-nil means `ace-jump-word-mode' asks for the head char of the word.
+If nil, it marks all the words in view."
   :type 'boolean
   :group 'ace-jump)
 
@@ -207,16 +208,16 @@ If nil, `ace-jump-mode-case-fold' alone decides."
   "The list that is used to store the history for jump back.")
 
 (defcustom ace-jump-mode-mark-ring-max 100
-  "The max length of `ace-jump-mode-mark-ring'"
+  "The maximum length of `ace-jump-mode-mark-ring'."
   :type 'integer
   :group 'ace-jump)
 
 
 (defcustom ace-jump-mode-gray-background t
-  "By default, when there is more than one candidate, the ace
-jump mode will gray the background and then mark the possible
-candidate position. Set this to nil means do not gray
-background."
+  "Non-nil means gray the windows while choosing between candidates.
+With more than one candidate, AceJump then grays the windows it
+searches in, to make the labels stand out.  If nil, it leaves them
+as they are."
   :type 'boolean
   :group 'ace-jump)
 
@@ -237,11 +238,11 @@ Now, there are four kinds of values for this:
   :group 'ace-jump)
 
 (defcustom ace-jump-mode-detect-punc t
-  "When this is non-nil, the ace jump word mode will detect the
-char that is not alpha or number. Then, if the query char is a
-printable punctuation, we will use char mode to start the ace
-jump mode. If it is nil, an error will come up when
-non-alpha-number is given under word mode."
+  "Non-nil means word mode falls back to char mode for punctuation.
+When the head char given to `ace-jump-word-mode' is a printable
+character other than a letter or a digit, AceJump then searches for
+it as `ace-jump-char-mode' does.  If nil, such a head char is an
+error."
   :type 'boolean
   :group 'ace-jump)
 
@@ -250,29 +251,17 @@ non-alpha-number is given under word mode."
   '(ace-jump-word-or-line-mode
     ace-jump-char-mode
     ace-jump-line-mode)
-  "The mode list when start ace jump mode.
-The sequence is the calling sequence when give prefix argument.
+  "The submodes `ace-jump-mode' chooses from by the prefix argument.
+Without a prefix argument it starts the first one, with
+\\[universal-argument] the second one, and with a larger prefix argument a
+later one, the last one at most.  So by default it starts
+`ace-jump-word-or-line-mode', where RET as the head char gives line
+mode, `ace-jump-char-mode' with \\[universal-argument] and
+`ace-jump-line-mode' with \\[universal-argument] \\[universal-argument].
 
-Such as:
-  If you use the default sequence, which is
-      \\='(ace-jump-word-or-line-mode
-        ace-jump-char-mode
-        ace-jump-line-mode)
-and using key to start up ace jump mode, such as `C-c SPC',
-then the usage to start each mode is as below:
-
-   C-c SPC           ==> ace-jump-word-or-line-mode
-                         (C-c SPC RET for line mode)
-   C-u C-c SPC       ==> ace-jump-char-mode
-   C-u C-u C-c SPC   ==> ace-jump-line-mode
-
-Currently, the valid submode is:
-   `ace-jump-word-mode'
-   `ace-jump-char-mode'
-   `ace-jump-line-mode'
-   `ace-jump-word-or-line-mode'
-   `ace-jump-char-or-line-mode'
-"
+The submodes are `ace-jump-word-mode', `ace-jump-char-mode',
+`ace-jump-line-mode', `ace-jump-word-or-line-mode' and
+`ace-jump-char-or-line-mode'."
   :type '(repeat (choice (function-item ace-jump-word-or-line-mode)
                          (function-item ace-jump-word-mode)
                          (function-item ace-jump-char-mode)
@@ -301,8 +290,9 @@ for example, you only want to use lower case character:
 (defvar ace-jump-background-overlay-list nil
   "Background overlay which will grey all the display.")
 (defvar ace-jump-search-tree nil
-  "N-branch Search tree. Every leaf node holds the overlay that
-is used to highlight the target positions.")
+  "The N-branch search tree.
+Every leaf node holds the overlay that is used to highlight one of the
+target positions.")
 (defvar ace-jump-query-char nil
   "Save the query char used between internal mode.")
 (defvar ace-jump-current-mode nil
@@ -310,24 +300,24 @@ is used to highlight the target positions.")
 See `ace-jump-mode-submode-list' for possible value.")
 
 (defvar ace-jump-sync-emacs-mark-ring nil
-  "When this variable is non-nil, every time `ace-jump-mode-pop-mark' is called,
-ace jump will try to remove the same mark from buffer local mark
-ring and global-mark-ring, which help you to sync the mark
-information between emacs and ace jump.
+  "Non-nil means `ace-jump-mode-pop-mark' syncs the Emacs mark rings.
+Jumping back to a position, it then moves the same mark to the end
+of the buffer local `mark-ring', or of `global-mark-ring' for another
+buffer, as `pop-mark' and `pop-global-mark' would.
 
-Note, never try to set this variable manually, this is for ace
-jump internal use.  If you want to change it, use
-`ace-jump-mode-enable-mark-sync' or
-`ace-jump-mode-disable-mark-sync'.")
+Never set this variable directly, it is for AceJump internal use: use
+`ace-jump-mode-enable-mark-sync' or `ace-jump-mode-disable-mark-sync'.")
 
 (defvar ace-jump-search-filter nil
-  "This should be nil or a point-dependent predicate
-that `ace-jump-search-candidate' will use as an additional filter.")
+  "A predicate to filter the candidates further, or nil.
+`ace-jump-search-candidate' calls it with no arguments, with point
+after a match and the match data set, and drops the match if the
+predicate returns nil.")
 
 ;;; define the face
 (defface ace-jump-face-background
   '((t (:foreground "gray40")))
-  "Face for background of AceJump motion"
+  "Face for the grayed windows of AceJump."
   :group 'ace-jump)
 
 
@@ -336,17 +326,17 @@ that `ace-jump-search-candidate' will use as an additional filter.")
     (((background dark)) (:foreground "gray100" :underline nil :strike-through nil))
     (((background light)) (:foreground "gray0" :underline nil :strike-through nil))
     (t (:foreground "gray100" :underline nil)))
-  "Face for foreground of AceJump motion"
+  "Face for the labels of AceJump."
   :group 'ace-jump)
 
 
 (defcustom ace-jump-mode-before-jump-hook nil
-  "Function(s) to call just before moving the cursor to a selected match"
+  "Hook run just before moving the cursor to the chosen candidate."
   :type 'hook
   :group 'ace-jump)
 
 (defcustom ace-jump-mode-end-hook nil
-  "Function(s) to call when ace-jump-mode is going to end up"
+  "Hook run when AceJump ends after a jump."
   :type 'hook
   :group 'ace-jump)
 
@@ -390,10 +380,10 @@ See `ace-jump-mode-case-fold' and `ace-jump-mode-upper-case'."
                  (/= query-char (downcase query-char))))))
 
 (defun ace-jump-char-category ( query-char )
-  "Detect the type of the char.
-For the ascii table, refer to http://www.asciitable.com/
+  "Return the category of QUERY-CHAR.
+For the ASCII table, refer to http://www.asciitable.com/
 
-There is four possible return value:
+There are four possible return values:
 1. `digit': the number character
 2. `alpha': A-Z and a-z, and any other word constituent
             according to the syntax table (e.g. Cyrillic letters)
@@ -435,14 +425,12 @@ There is four possible return value:
 
 
 (defun ace-jump-search-candidate (re-query-string visual-area-list)
-  "Search the RE-QUERY-STRING in current view, return the candidate positions.
-RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
+  "Search RE-QUERY-STRING in the windows of VISUAL-AREA-LIST.
+Return the candidate positions in view, a list of `ace-jump--position'.
+RE-QUERY-STRING should be a valid regexp for `re-search-forward'.
 
-You can control whether use the case sensitive or not by
-`ace-jump-mode-case-fold'.
-
-Every possible `match-beginning' will be collected.
-The returned value is a list of `ace-jump--position' record."
+Every `match-beginning' in view is collected, and
+`ace-jump-mode-case-fold' decides whether case is ignored."
   (cl-loop for va in visual-area-list
            append (let* ((current-window (ace-jump--visual-area-window va))
                          (start-point (window-start current-window))
@@ -473,10 +461,10 @@ The returned value is a list of `ace-jump--position' record."
                                           (goto-char (1+ (match-beginning 0)))))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
-  "Construct the search tree, each item in the tree is a cons cell.
-The (car tree-node) is the type, which should be only `branch' or `leaf'.
-The (cdr tree-node) is data stored in a leaf when type is `leaf',
-while a child node list when type is `branch'"
+  "Construct a search tree of TOTAL-LEAF-NODE leaves, breadth first.
+Each node has at most MAX-CHILD-NODE children.  Each node is a cons
+cell: its car is the type, `branch' or `leaf', and its cdr is the data
+of a leaf, or the list of children of a branch."
   (let ((left-leaf-node (- total-leaf-node 1))
         (q (make-ace-jump--queue))
         (node nil)
@@ -513,8 +501,8 @@ while a child node list when type is `branch'"
     root))
 
 (defun ace-jump-tree-preorder-traverse (tree &optional leaf-func branch-func)
-  "we move over tree via preorder, and call BRANCH-FUNC on each branch
-node and call LEAF-FUNC on each leaf node"
+  "Traverse TREE in preorder.
+Call BRANCH-FUNC on each branch node and LEAF-FUNC on each leaf node."
   ;; use stack to do preorder traverse
   (let ((s (list tree)))
     (while (not (null s))
@@ -537,11 +525,11 @@ node and call LEAF-FUNC on each leaf node"
 
 
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
-  "Populate the overlay to search tree, every leaf will give one overlay"
-  
+  "Populate the leaves of TREE with overlays on CANDIDATE-LIST.
+Every leaf gets the overlay of one candidate."
   (let* (;; the candidates left to place, consumed by the closure below
          (position-list candidate-list)
-                 
+
          ;; make the function to create overlay for each leaf node,
          ;; here we only create each overlay for each candidate
          ;; position, , but leave the 'display property to be empty,
@@ -572,21 +560,21 @@ node and call LEAF-FUNC on each leaf node"
 
 
 (defun ace-jump-delete-overlay-in-search-tree (tree)
-  "Delete all the overlay in search tree leaf node"
+  "Delete the overlays in the leaves of TREE."
   (let ((func-delete-overlay (lambda (node)
                                (delete-overlay (cdr node))
                                (setf (cdr node) nil))))
     (ace-jump-tree-preorder-traverse tree func-delete-overlay)))
 
 (defun ace-jump-buffer-substring (pos)
-  "Get the char under the POS, which is ace-jump--position structure."
+  "Return the character at POS, an `ace-jump--position'."
   (let* ((w (ace-jump--position-window pos))
          (offset (ace-jump--position-offset pos)))
     (with-selected-window w
       (buffer-substring offset (1+ offset)))))
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
-  "Update overlay `display' property using each name in KEYS."
+  "Label the candidates of TREE with KEYS, by the overlay `display'."
   (let* (;; the key of the subtree being labeled, set by the loop below
          (key ?\0)
          ;; populate each leaf node to be the specific key,
@@ -632,7 +620,8 @@ node and call LEAF-FUNC on each leaf node"
 
 
 (defun ace-jump-list-visual-area()
-  "Based on `ace-jump-mode-scope', search the possible buffers that is showing now."
+  "Return the windows to search in, as `ace-jump-mode-scope' says.
+The windows are a list of `ace-jump--visual-area'."
   (cond
    ((eq ace-jump-mode-scope 'global)
     (cl-loop for f in (frame-list)
@@ -653,7 +642,7 @@ node and call LEAF-FUNC on each leaf node"
                                                  :window w
                                                  :frame (selected-frame))))
    ((eq ace-jump-mode-scope 'window)
-    (list 
+    (list
      (make-ace-jump--visual-area :buffer (current-buffer)
                                  :window (selected-window)
                                  :frame  (selected-frame))))
@@ -770,7 +759,7 @@ POSITION is a `ace-jump--position' structure storing the position information."
     (if (and (frame-live-p frame)
              (not (eq frame (selected-frame))))
         (select-frame-set-input-focus (window-frame window)))
-    
+
     ;; select the correct window
     (if (and (window-live-p window)
              (not (eq window (selected-window))))
@@ -788,8 +777,7 @@ POSITION is a `ace-jump--position' structure storing the position information."
 
     ;; recover to the same column if we use the line jump mode
     (if (eq ace-jump-current-mode 'ace-jump-line-mode)
-        (move-to-column line-mode-column))
-    ))
+        (move-to-column line-mode-column))))
 
 (defun ace-jump-push-mark ()
   "Push the current position information onto the `ace-jump-mode-mark-ring'.
@@ -813,14 +801,15 @@ then the mark stays where it is, and the jump extends the region, as
 
 ;;;###autoload
 (defun ace-jump-mode-pop-mark ()
-  "Pop up a position from `ace-jump-mode-mark-ring', and jump back to that position"
+  "Jump back to where the last jump started.
+Repeated calls go further back, around `ace-jump-mode-mark-ring'."
   (interactive)
   ;; we jump over the killed buffer position
   (while (and ace-jump-mode-mark-ring
               (not (buffer-live-p (ace-jump--position-buffer
                                    (car ace-jump-mode-mark-ring)))))
     (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
-    
+
   (if (null ace-jump-mode-mark-ring)
       ;; no valid history exist
       (user-error "[AceJump] No more history"))
@@ -841,9 +830,9 @@ then the mark stays where it is, and the jump extends the region, as
                   (move-marker (car mark-ring) nil)
                   (setq mark-ring (cdr mark-ring))
                   (deactivate-mark))
-              
+
               ;;  But if there is other marker put before the wanted destination, the following scenario
-              ;;                                                           
+              ;;
               ;;             +---+---+---+---+                                   +---+---+---+---+
               ;;   Mark Ring | 2 | 3 | 4 | 5 |                                   | 2 | 4 | 5 | 3 |
               ;;             +---+---+---+---+                                   +---+---+---+---+
@@ -853,17 +842,17 @@ then the mark stays where it is, and the jump extends the region, as
               ;;             +---+                                               +---+
               ;;   Cursor    | X |                     Pop up AJ mark 3          | 3 | <-- Cursor position
               ;;             +---+                                               +---+
-              ;;             +---+---+---+                                       +---+---+---+ 
+              ;;             +---+---+---+                                       +---+---+---+
               ;;   AJ Ring   | 3 | 4 | 5 |                                       | 4 | 5 | 3 |
               ;;             +---+---+---+                                       +---+---+---+
-              ;;   
+              ;;
               ;; So what we need to do, is put the found mark in mark-ring to the end
               (let ((po (ace-jump--position-offset p)))
                 (setq mark-ring
                       (ace-jump-move-first-to-end-if mark-ring
                                                      (lambda (x)
                                                        (equal (marker-position x) po))))))
-              
+
 
           ;; when we jump back to another buffer, do as the
           ;; pop-global-mark does. But we move the marker with the
@@ -873,16 +862,15 @@ then the mark stays where it is, and the jump extends the region, as
                   (ace-jump-move-first-to-end-if global-mark-ring
                                                  (lambda (x)
                                                    (eq (marker-buffer x) pb))))))))
-          
-  
+
+
   ;; move the first element to the end of the ring
   (ace-jump-jump-to (car ace-jump-mode-mark-ring))
   (setq ace-jump-mode-mark-ring (nconc (cdr ace-jump-mode-mark-ring)
                                        (list (car ace-jump-mode-mark-ring)))))
 
 (defun ace-jump-quick-exchange ()
-  "The function that we can use to quick exchange the current mode between
-word-mode and char-mode"
+  "Switch between char mode and word mode for the same query char."
   (interactive)
   (cond
    ((eq ace-jump-current-mode 'ace-jump-char-mode)
@@ -905,14 +893,16 @@ word-mode and char-mode"
 
 ;;;###autoload
 (defun ace-jump-char-mode (query-char)
-  "AceJump char mode"
+  "Jump to an occurrence of QUERY-CHAR in view.
+An upper case QUERY-CHAR makes the search case-sensitive: see
+`ace-jump-mode-upper-case'."
   (interactive (list (read-char "Query Char:")))
 
   ;; We should prevent recursion call this function.  This can happen
   ;; when you trigger the key for ace jump again when already in ace
   ;; jump mode.  So we stop the previous one first.
   (if ace-jump-current-mode (ace-jump-done))
-  
+
   (if (eq (ace-jump-char-category query-char) 'other)
     (user-error "[AceJump] Non-printable character"))
 
@@ -925,10 +915,10 @@ word-mode and char-mode"
 
 ;;;###autoload
 (defun ace-jump-word-mode (head-char)
-  "AceJump word mode.
-You can set `ace-jump-word-mode-use-query-char' to nil to prevent
-asking for a head char, that will mark all the word in current
-buffer."
+  "Jump to a word in view that starts with HEAD-CHAR.
+If HEAD-CHAR is nil, as when `ace-jump-word-mode-use-query-char' is
+nil, mark all the words in view.  Punctuation as HEAD-CHAR falls back
+to char mode: see `ace-jump-mode-detect-punc'."
   (interactive (list (if ace-jump-word-mode-use-query-char
                          (read-char "Head Char:")
                        nil)))
@@ -965,15 +955,14 @@ buffer."
 
 ;;;###autoload
 (defun ace-jump-line-mode ()
-  "AceJump line mode.
-Marked each no empty line and move there"
+  "Jump to a line in view, keeping the column, as \\[next-line] does."
   (interactive)
 
   ;; We should prevent recursion call this function.  This can happen
   ;; when you trigger the key for ace jump again when already in ace
   ;; jump mode.  So we stop the previous one first.
   (if ace-jump-current-mode (ace-jump-done))
-  
+
   (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^"))
 
@@ -1005,27 +994,12 @@ as `ace-jump-word-mode' does."
 
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
-  "AceJump mode is a minor mode for you to quick jump to a
-position in the current view.
-   There are five submodes:
-     `ace-jump-char-mode'
-     `ace-jump-word-mode'
-     `ace-jump-line-mode'
-     `ace-jump-char-or-line-mode'
-     `ace-jump-word-or-line-mode'
+  "Jump to a position in view, by the submode PREFIX chooses.
+See `ace-jump-mode-submode-list' for the submodes and how the prefix
+argument chooses between them.
 
-You can specify the sequence about which mode should enter
-by customize `ace-jump-mode-submode-list'.
-
-If you do not want to query char for word mode, you can change
-`ace-jump-word-mode-use-query-char' to nil.
-
-If you don't like the default move keys, you can change it by
-setting `ace-jump-mode-move-keys'.
-
-You can control whether use the case sensitive via
-`ace-jump-mode-case-fold'.
-"
+See also `ace-jump-word-mode-use-query-char', `ace-jump-mode-move-keys'
+and `ace-jump-mode-case-fold'."
   (interactive "p")
   (let ((index (/ prefix 4))
         (submode-list-length (length ace-jump-mode-submode-list)))
@@ -1095,14 +1069,14 @@ KEY is the move key to use, the key that invoked the command by default."
         (ace-jump-delete-overlay-in-search-tree old-tree)))
      ;; if the node is leaf node, this is the final one
      ((eq (car node) 'leaf)
-      ;; need to save aj data, as `ace-jump-done' will clean it
-      (let ((ace-jump--data (overlay-get (cdr node) 'ace-jump--data)))
+      ;; save the target, as `ace-jump-done' deletes its overlay
+      (let ((target (overlay-get (cdr node) 'ace-jump--data)))
         ;; leave AceJump mode even if the jump fails
         (unwind-protect
             (progn
               (ace-jump-push-mark)
               (run-hooks 'ace-jump-mode-before-jump-hook)
-              (ace-jump-jump-to ace-jump--data))
+              (ace-jump-jump-to target))
           (ace-jump-done)))
       (run-hooks 'ace-jump-mode-end-hook))
      (t
@@ -1112,7 +1086,7 @@ KEY is the move key to use, the key that invoked the command by default."
 
 
 (defun ace-jump-done()
-  "stop AceJump motion"
+  "Stop AceJump: remove its labels and its keymap."
   (interactive)
   ;; clear the status flag
   (setq ace-jump-query-char nil)
@@ -1138,8 +1112,7 @@ KEY is the move key to use, the key that invoked the command by default."
   (remove-hook 'kbd-macro-termination-hook 'ace-jump-done))
 
 (defun ace-jump-kill-buffer(buffer)
-  "Utility function to kill buffer for ace jump mode.
-We also need to handle the buffer which has clients on it"
+  "Kill BUFFER, done with its server clients first, if any."
   (if (and (boundp 'server-buffer-clients)
            server-buffer-clients)
       (server-buffer-done buffer t))
@@ -1150,12 +1123,9 @@ We also need to handle the buffer which has clients on it"
 ;;;; ============================================
 
 (defun ace-jump-move-to-end-if ( l pred )
-  "Move all the element in a list to the end of list if it make
-the PRED to return non-nil.
-
-PRED is a function object which can pass to funcall and accept
-one argument, which will be every element in the list.
-Such as : (lambda (x) (equal x 1)) "
+  "Move the elements of L for which PRED returns non-nil to its end.
+PRED is called with one element at a time, for instance
+\(lambda (x) (equal x 1))."
   (let (true-list false-list)
     (cl-loop for e in l
              do (if (funcall pred e)
@@ -1165,7 +1135,7 @@ Such as : (lambda (x) (equal x 1)) "
            (and true-list (nreverse true-list)))))
 
 (defun ace-jump-move-first-to-end-if (l pred)
-  "Only move the first found one to the end of list"
+  "Move the first element of L for which PRED returns non-nil to its end."
   (let (found)
     (ace-jump-move-to-end-if l
                              (lambda (x)
@@ -1173,7 +1143,7 @@ Such as : (lambda (x) (equal x 1)) "
                                    nil
                                  (setq found (funcall pred x)))))))
 
-  
+
 
 (defun ace-jump-pop-mark-advice (&rest _)
   "Sync the mark ring when `pop-mark' is called to jump back.
@@ -1189,7 +1159,7 @@ Move the same position to the end of `ace-jump-mode-mark-ring'."
 
 (defun ace-jump-pop-global-mark-advice (&rest _)
   "Sync the mark ring when `pop-global-mark' is called to jump back.
-Move the ace-jump--position with the same buffer to the end of
+Move the positions in the same buffer to the end of
 `ace-jump-mode-mark-ring'."
   ;; find the one that will be jump to
   (let ((index global-mark-ring))
@@ -1205,29 +1175,18 @@ Move the ace-jump--position with the same buffer to the end of
                                            (eq (ace-jump--position-buffer x) mb))))))))
 
 (defun ace-jump-mode-enable-mark-sync ()
-  "Enable the sync function between ace jump mode mark ring and emacs mark ring.
-
-1. This function will enable the advice which activate on
-`pop-mark' and `pop-global-mark'. These advice will remove the
-same marker from `ace-jump-mode-mark-ring' when user use
-`pop-mark' or `global-pop-mark' to jump back. 
-
-2. Set variable `ace-jump-sync-emacs-mark-ring' to t, which will
-sync mark information with emacs mark ring. "
+  "Keep `ace-jump-mode-mark-ring' in sync with the Emacs mark rings.
+Advise `pop-mark' and `pop-global-mark' to move the position they jump
+back to to the end of `ace-jump-mode-mark-ring', and set
+`ace-jump-sync-emacs-mark-ring', so that `ace-jump-mode-pop-mark' does
+the same in the Emacs mark rings."
   (advice-add 'pop-mark :before #'ace-jump-pop-mark-advice)
   (advice-add 'pop-global-mark :before #'ace-jump-pop-global-mark-advice)
   (setq ace-jump-sync-emacs-mark-ring t))
 
 (defun ace-jump-mode-disable-mark-sync ()
-  "Disable the sync function between ace jump mode mark ring and emacs mark ring.
-
-1. This function will disable the advice which activate on
-`pop-mark' and `pop-global-mark'. These advice will remove the
-same marker from `ace-jump-mode-mark-ring' when user use
-`pop-mark' or `global-pop-mark' to jump back. 
-
-2. Set variable `ace-jump-sync-emacs-mark-ring' to nil, which
-will stop synchronizing mark information with emacs mark ring. "
+  "Stop syncing `ace-jump-mode-mark-ring' with the Emacs mark rings.
+Undo `ace-jump-mode-enable-mark-sync'."
   (advice-remove 'pop-mark #'ace-jump-pop-mark-advice)
   (advice-remove 'pop-global-mark #'ace-jump-pop-global-mark-advice)
   (setq ace-jump-sync-emacs-mark-ring nil))
