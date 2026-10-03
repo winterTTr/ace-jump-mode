@@ -654,6 +654,9 @@ You can constrol whether use the case sensitive via
               (dolist (key-code ace-jump-mode-move-keys)
                 (define-key map (make-string 1 key-code) 'ace-jump-move))
               (define-key map (kbd "C-c C-c") 'ace-jump-quick-exchange)
+              ;; "C-c C-c" makes C-c a prefix, which [t] below does not
+              ;; cover: any other C-c key must stop AceJump as well
+              (define-key map [?\C-c t] 'ace-jump-done)
               (define-key map [t] 'ace-jump-move-translated)
               map))
 
