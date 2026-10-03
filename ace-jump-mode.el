@@ -322,7 +322,8 @@ There is four possible return value:
 1. `digit': the number character
 2. `alpha': A-Z and a-z, and any other word constituent
             according to the syntax table (e.g. Cyrillic letters)
-3. `punc' : all the printable punctuaiton
+3. `punc' : all the printable punctuaiton, and any other printable
+            character (e.g. typographic quotes and dashes)
 4. `other': all the others"
   (cond
    ;; digit
@@ -350,6 +351,10 @@ There is four possible return value:
    ((and (characterp query-char)
          (eq (char-syntax query-char) ?w))
     'alpha)
+   ;; printable punctuation and symbols beyond ASCII
+   ((and (characterp query-char)
+         (aref printable-chars query-char))
+    'punc)
    (t
     'other)))
 
