@@ -252,11 +252,11 @@ error."
     ace-jump-char-mode
     ace-jump-line-mode)
   "The submodes `ace-jump-mode' chooses from by the prefix argument.
-Without a prefix argument it starts the first one, with
-\\[universal-argument] the second one, and with a larger prefix argument a
-later one, the last one at most.  So by default it starts
-`ace-jump-word-or-line-mode', where RET as the head char gives line
-mode, `ace-jump-char-mode' with \\[universal-argument] and
+Without a prefix argument it starts the first one, and each
+\\[universal-argument] moves on to the next one, the last one at most.  A numeric
+prefix argument counts as \\[universal-argument] does, as 4 per press.  So by
+default it starts `ace-jump-word-or-line-mode', where RET as the head
+char gives line mode, `ace-jump-char-mode' with \\[universal-argument] and
 `ace-jump-line-mode' with \\[universal-argument] \\[universal-argument].
 
 The submodes are `ace-jump-word-mode', `ace-jump-char-mode',
@@ -1001,13 +1001,17 @@ argument chooses between them.
 See also `ace-jump-word-mode-use-query-char', `ace-jump-mode-move-keys'
 and `ace-jump-mode-case-fold'."
   (interactive "p")
-  (let ((index (/ prefix 4))
-        (submode-list-length (length ace-jump-mode-submode-list)))
-    (if (< index 0)
-        (user-error "[AceJump] Invalid prefix command"))
-    (if (>= index submode-list-length)
-        (setq index (1- submode-list-length)))
-    (call-interactively (nth index ace-jump-mode-submode-list))))
+  (setq prefix (or prefix 1))
+  (if (< prefix 0)
+      (user-error "[AceJump] Invalid prefix command"))
+  (let ((index 0))
+    ;; one submode further for each C-u, that is for each factor of 4
+    (while (>= prefix 4)
+      (setq prefix (/ prefix 4)
+            index (1+ index)))
+    (call-interactively
+     (nth (min index (1- (length ace-jump-mode-submode-list)))
+          ace-jump-mode-submode-list))))
 
 (defun ace-jump-translate-key-by-function-key-map (event)
   "Return the character EVENT stands for in `local-function-key-map', or nil.

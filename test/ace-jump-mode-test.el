@@ -310,6 +310,26 @@ instead of leaving its labels behind."
         (call-interactively #'ace-jump-word-or-line-mode))
       (should (equal (mapcar #'car (ace-jump-test-labels)) '(1 4 7 10))))))
 
+(ert-deftest ace-jump-test-submode-by-prefix-long-list ()
+  "Each C-u moves on to the next submode, however many there are."
+  (let* ((chosen nil)
+         (ace-jump-mode-submode-list
+          (mapcar (lambda (n) (lambda () (interactive) (setq chosen n)))
+                  '(1 2 3 4 5))))
+    (dolist (case '((1 . 1) (4 . 2) (16 . 3) (64 . 4) (256 . 5)
+                    ;; past the end of the list: the last one
+                    (1024 . 5)
+                    ;; a numeric argument counts as C-u does, 4 per press
+                    (0 . 1) (3 . 1) (8 . 2) (63 . 3)))
+      (setq chosen nil)
+      (let ((current-prefix-arg (car case)))
+        (call-interactively #'ace-jump-mode))
+      (should (equal (cons (car case) chosen) case)))
+    ;; called from Lisp without a prefix
+    (setq chosen nil)
+    (ace-jump-mode)
+    (should (eq chosen 1))))
+
 (ert-deftest ace-jump-test-labels ()
   "Each candidate gets a label from `ace-jump-mode-move-keys', in order."
   (ace-jump-test-with-buffer "a1 a2 a3"
