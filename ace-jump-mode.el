@@ -56,42 +56,29 @@
 
 ;;; Usage
 ;;
-;; Add the following code to your init file, of course you can select
-;; the key that you prefer to.
-;; ----------------------------------------------------------
-;; ;;
-;; ;; ace jump mode major function
-;; ;;
-;; (add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
-;; (autoload
-;;   'ace-jump-mode
-;;   "ace-jump-mode"
-;;   "Emacs quick move minor mode"
-;;   t)
-;; ;; you can select the key you prefer to
-;; (define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
+;; Bind the commands to keys of your choice, for instance:
 ;;
-;; ;;
-;; ;; enable a more powerful jump back function from ace jump mode
-;; ;;
-;; (autoload
-;;   'ace-jump-mode-pop-mark
-;;   "ace-jump-mode"
-;;   "Ace jump back:-)"
-;;   t)
-;; (eval-after-load 'ace-jump-mode
-;;   '(ace-jump-mode-enable-mark-sync))
-;; (define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+;;   (use-package ace-jump-mode
+;;     :bind (("M-a" . ace-jump-mode)       ; instead of `backward-sentence'
+;;            ("C-c M-a" . ace-jump-mode-pop-mark))
+;;     :config
+;;     (ace-jump-mode-enable-mark-sync))
 ;;
-;; ;;If you use viper mode :
-;; (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
-;; ;;If you use evil
-;; (define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
-;; ----------------------------------------------------------
+;; M-a asks for the first character of a word and labels the words in
+;; view that start with it: type a label to jump there.  RET instead of
+;; a character labels the lines.  C-u M-a does the same for any
+;; character, C-u C-u M-a for the lines, and C-c M-a jumps back.
+;;
+;; If you use evil or viper:
+;;
+;;   (define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
+;;   (define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
+;;
+;; M-x customize-group RET ace-jump RET lists the options.
 
 ;;; For more information
-;; Intro Doc: https://github.com/winterTTr/ace-jump-mode/wiki
-;; FAQ      : https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ
+;; README: https://github.com/kostafey/ace-jump-mode
+;; FAQ   : https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ
 
 ;;; Code:
 

@@ -5,84 +5,99 @@ Ace Jump Mode
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](LICENSE)
 [![test](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml/badge.svg)](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml)
 
-Ace jump mode is a minor mode of emacs, which help you to move the
-cursor within Emacs.  You can move your cursor to **ANY** position (
-across window and frame ) in emacs by using only **3 times key
-press**. Have a try and I am sure you will love it.
+Ace jump mode is a minor mode of Emacs, which helps you to move the
+cursor within Emacs.  You can move your cursor to **ANY** position
+(across windows and frames) in Emacs by using only **3 key presses**.
+Have a try and I am sure you will love it.
+
+This repository carries on
+[winterTTr/ace-jump-mode](https://github.com/winterTTr/ace-jump-mode),
+not updated since 2014, and gathers the fixes left in its pull
+requests and forks.
 
 
-What's new in 2.0 version?
---------------------------
+Usage
+-----
 
-In 1.0 version, ace jump mode can only work in current window.
+With the keys from [Installation](#installation):
 
-However, this limitation has already been broken in 2.0 version.  With
-ace jump mode 2.0, you can jump to any position you wish across the
-bounder of window(c-x 2/3) and even frame(c-x 5).
+`M-a` ==> `ace-jump-word-or-line-mode`
+
+> Go to a word by entering its first character, then selecting the
+> highlighted key to move to it.  Go to a line by pressing `RET`
+> instead of a character.
+
+`C-u M-a` ==> `ace-jump-char-mode`
+
+> Go to a character by entering that character, then selecting the
+> highlighted key to move to it.
+
+`C-u C-u M-a` ==> `ace-jump-line-mode`
+
+> Go to a line by selecting the highlighted key to move to it.
+
+`C-c M-a` ==> `ace-jump-mode-pop-mark`
+
+> Jump back to where the last jump started.  Repeat it to go further
+> back.
+
+When there are more candidates than keys, the first key narrows the
+choice, and a second one jumps.  An upper case character searches
+case-sensitively.
+
+Watch [Emacs Rocks! Episode 10: Jumping
+around](https://www.youtube.com/watch?v=UZkpmegySnc) to see it in
+action.
 
 
-Is there a demo to show the usage?
-------------------------------------
-Here is a simple one for you to learn how to use ace jump, [Demo](http://dl.dropbox.com/u/3254819/AceJumpModeDemo/AceJumpDemo.htm)
+Installation
+------------
 
-Usage: 
-
-"C-c SPC" ==>  ace-jump-word-or-line-mode
-
->Go to a word by entering its first character, then selecting the highlighted key to move to it.
->Go to a line by pressing return, then selecting the highlighted key to move to it.
-
-"C-u C-c SPC" ==>  ace-jump-char-mode
-
->Go to a character by entering that character, then selecting the highlighted key to move to it.
-
-"C-u C-u C-c SPC" ==>  ace-jump-line-mode
-
->Go to a line by selecting the highlighted key to move to it.
-
-Thanks emacsrocks website, they make a great show to ace jump mode,
-refer to [here](http://www.youtube.com/watch?feature=player_embedded&v=UZkpmegySnc#!).
-
-
-How to install it?
-------------------
+The [MELPA](https://melpa.org/#/ace-jump-mode) package is still built
+from the original repository, so install this one from git.  With
+Emacs 30 or later:
 
 ```elisp
-;;
-;; ace jump mode major function
-;; 
-(add-to-list 'load-path "/full/path/where/ace-jump-mode.el/in/")
-(autoload
-  'ace-jump-mode
-  "ace-jump-mode"
-  "Emacs quick move minor mode"
-  t)
-;; you can select the key you prefer to
-(define-key global-map (kbd "C-c SPC") 'ace-jump-mode)
-
-
-
-;; 
-;; enable a more powerful jump back function from ace jump mode
-;;
-(autoload
-  'ace-jump-mode-pop-mark
-  "ace-jump-mode"
-  "Ace jump back:-)"
-  t)
-(eval-after-load 'ace-jump-mode
-  '(ace-jump-mode-enable-mark-sync))
-(define-key global-map (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
-
-;;If you use viper mode :
-(define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
-;;If you use evil
-(define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
+(use-package ace-jump-mode
+  :vc (:url "https://github.com/kostafey/ace-jump-mode" :rev :newest)
+  :bind (("M-a" . ace-jump-mode)               ; instead of `backward-sentence'
+         ("C-c M-a" . ace-jump-mode-pop-mark))
+  :config
+  (ace-jump-mode-enable-mark-sync))
 ```
 
-I want to know more about customized configuration?
----------------------------------------------------
-See [FAQ ](http://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
+With [straight.el](https://github.com/radian-software/straight.el),
+replace the `:vc` line with
+`:straight (:host github :repo "kostafey/ace-jump-mode")`.  If another
+package depends on ace-jump-mode, override its recipe instead, so that
+this one is used for both:
+
+```elisp
+(straight-override-recipe
+ '(ace-jump-mode :type git :host github :repo "kostafey/ace-jump-mode"))
+```
+
+Any other free keys will do as well, `C-c j` for one.
+`ace-jump-mode-enable-mark-sync` keeps `ace-jump-mode-pop-mark` in sync
+with the Emacs mark rings, and the other way round.
+
+If you use evil or viper:
+
+```elisp
+(define-key evil-normal-state-map (kbd "SPC") 'ace-jump-mode)
+(define-key viper-vi-global-user-map (kbd "SPC") 'ace-jump-mode)
+```
+
+
+Customization
+-------------
+
+`M-x customize-group RET ace-jump RET` lists the options: the move
+keys, the scope of a jump (all the windows of all the frames by
+default, or the selected window only), case sensitivity and so on.
+See also the [FAQ](https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
+of the original project.
+
 
 License
 -------
