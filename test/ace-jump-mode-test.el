@@ -110,7 +110,7 @@ not stop it."
 (defun ace-jump-test-displays ()
   "Return the labels on display as (POSITION . DISPLAY), in buffer order."
   (sort (cl-loop for ol in (overlays-in (point-min) (point-max))
-                 when (overlay-get ol 'aj-data)
+                 when (overlay-get ol 'ace-jump--data)
                  collect (cons (overlay-start ol) (overlay-get ol 'display)))
         #'car-less-than-car))
 
@@ -121,7 +121,7 @@ not stop it."
 
 (defun ace-jump-test-candidates (regexp)
   "Return the positions `ace-jump-search-candidate' finds for REGEXP."
-  (mapcar #'aj-position-offset
+  (mapcar #'ace-jump--position-offset
           (ace-jump-search-candidate regexp (ace-jump-list-visual-area))))
 
 (defun ace-jump-test-find-all (string)

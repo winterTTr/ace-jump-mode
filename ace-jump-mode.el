@@ -6,7 +6,7 @@
 ;; Author: winterTTr <winterTTr@gmail.com>
 ;; Maintainer: Kostafey <kostafey@gmail.com>
 ;; URL: https://github.com/kostafey/ace-jump-mode
-;; Version: 2.1
+;; Version: 3.0
 ;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: convenience, motion, location, cursor
 
@@ -104,67 +104,67 @@
 ;;;; ============================================
 
 ;; ---------------------
-;; aj-position
+;; ace-jump--position
 ;; ---------------------
 
 ;; make a position in a visual area
-(cl-defstruct aj-position offset visual-area)
+(cl-defstruct ace-jump--position offset visual-area)
 
-(defmacro aj-position-buffer (aj-pos)
-  "Get the buffer object from `aj-position'."
-  `(aj-visual-area-buffer (aj-position-visual-area ,aj-pos)))
+(defmacro ace-jump--position-buffer (position)
+  "Get the buffer object from `ace-jump--position'."
+  `(ace-jump--visual-area-buffer (ace-jump--position-visual-area ,position)))
 
-(defmacro aj-position-window (aj-pos)
-  "Get the window object from `aj-position'."
-  `(aj-visual-area-window (aj-position-visual-area ,aj-pos)))
+(defmacro ace-jump--position-window (position)
+  "Get the window object from `ace-jump--position'."
+  `(ace-jump--visual-area-window (ace-jump--position-visual-area ,position)))
 
-(defmacro aj-position-frame (aj-pos)
-  "Get the frame object from `aj-position'."
-  `(aj-visual-area-frame (aj-position-visual-area ,aj-pos)))
+(defmacro ace-jump--position-frame (position)
+  "Get the frame object from `ace-jump--position'."
+  `(ace-jump--visual-area-frame (ace-jump--position-visual-area ,position)))
 
-(defmacro aj-position-recover-buffer (aj-pos)
-  "Get the recover-buffer object from `aj-position'."
-  `(aj-visual-area-recover-buffer (aj-position-visual-area ,aj-pos)))
+(defmacro ace-jump--position-recover-buffer (position)
+  "Get the recover-buffer object from `ace-jump--position'."
+  `(ace-jump--visual-area-recover-buffer (ace-jump--position-visual-area ,position)))
 
 
 ;; ---------------------
-;; aj-visual-area
+;; ace-jump--visual-area
 ;; ---------------------
 
 ;; a record for all the possible visual area
 ;; a visual area is a window that showing some buffer in some frame.
-(cl-defstruct aj-visual-area buffer window frame recover-buffer)
+(cl-defstruct ace-jump--visual-area buffer window frame recover-buffer)
 
 
 ;; ---------------------
 ;; a FIFO queue implementation
 ;; ---------------------
-(cl-defstruct aj-queue head tail)
+(cl-defstruct ace-jump--queue head tail)
 
-(defun aj-queue-push (item q)
+(defun ace-jump--queue-push (item q)
   "enqueue"
   (let ((c (list item)))
     (cond
-     ((null (aj-queue-head q))
-      (setf (aj-queue-head q) c)
-      (setf (aj-queue-tail q) c))
+     ((null (ace-jump--queue-head q))
+      (setf (ace-jump--queue-head q) c)
+      (setf (ace-jump--queue-tail q) c))
      (t
-      (setf (cdr (aj-queue-tail q)) c)
-      (setf (aj-queue-tail q) c)))))
+      (setf (cdr (ace-jump--queue-tail q)) c)
+      (setf (ace-jump--queue-tail q) c)))))
 
-(defun aj-queue-pop (q)
+(defun ace-jump--queue-pop (q)
   "dequeue"
-  (if (null (aj-queue-head q))
+  (if (null (ace-jump--queue-head q))
       (error "[AceJump] Internal Error: Empty queue"))
 
-  (let ((ret (aj-queue-head q)))
-    (if (eq ret (aj-queue-tail q))
+  (let ((ret (ace-jump--queue-head q)))
+    (if (eq ret (ace-jump--queue-tail q))
         ;; only one item left
         (progn
-          (setf (aj-queue-head q) nil)
-          (setf (aj-queue-tail q) nil))
+          (setf (ace-jump--queue-head q) nil)
+          (setf (ace-jump--queue-tail q) nil))
       ;; multi item left, move forward the head
-      (setf (aj-queue-head q) (cdr ret)))
+      (setf (ace-jump--queue-head q) (cdr ret)))
     (car ret)))
 
 
@@ -442,9 +442,9 @@ You can control whether use the case sensitive or not by
 `ace-jump-mode-case-fold'.
 
 Every possible `match-beginning' will be collected.
-The returned value is a list of `aj-position' record."
+The returned value is a list of `ace-jump--position' record."
   (cl-loop for va in visual-area-list
-           append (let* ((current-window (aj-visual-area-window va))
+           append (let* ((current-window (ace-jump--visual-area-window va))
                          (start-point (window-start current-window))
                          (end-point   (window-end   current-window t)))
                     (with-selected-window current-window
@@ -462,8 +462,8 @@ The returned value is a list of `aj-position' record."
                                            (or (null ace-jump-search-filter)
                                                (ignore-errors
                                                  (funcall ace-jump-search-filter))))
-                                   collect (make-aj-position :offset (match-beginning 0)
-                                                             :visual-area va)
+                                   collect (make-ace-jump--position :offset (match-beginning 0)
+                                                                    :visual-area va)
                                    ;; when we use "^" to search line mode,
                                    ;; re-search-backward will not move one
                                    ;; char after search success, as line
@@ -478,14 +478,14 @@ The (car tree-node) is the type, which should be only `branch' or `leaf'.
 The (cdr tree-node) is data stored in a leaf when type is `leaf',
 while a child node list when type is `branch'"
   (let ((left-leaf-node (- total-leaf-node 1))
-        (q (make-aj-queue))
+        (q (make-ace-jump--queue))
         (node nil)
         (root (cons 'leaf nil)) )
     ;; we push the node into queue and make candidate-sum -1, so
     ;; create the start condition for the while loop
-    (aj-queue-push root q)
+    (ace-jump--queue-push root q)
     (while (> left-leaf-node 0)
-      (setq node (aj-queue-pop q))
+      (setq node (ace-jump--queue-pop q))
       ;; when a node is picked up from stack, it will be changed to a
       ;; branch node, we lose a leaf node
       (setf (car node) 'branch)
@@ -506,7 +506,7 @@ while a child node list when type is `branch'"
           (setf (cdr node)
                 (cl-loop for i from 1 to max-child-node
                          collect (let ((n (cons 'leaf nil)))
-                                   (aj-queue-push n q)
+                                   (ace-jump--queue-push n q)
                                    n)))
           (setq left-leaf-node (- left-leaf-node max-child-node)))))
     ;; return the root node
@@ -548,9 +548,9 @@ node and call LEAF-FUNC on each leaf node"
          ;; which will be fill in "update-overlay" function
          (func-create-overlay (lambda (node)
                                 (let* ((p (car position-list))
-                                       (o (aj-position-offset p))
-                                       (w (aj-position-window p))
-                                       (b (aj-position-buffer p))
+                                       (o (ace-jump--position-offset p))
+                                       (w (ace-jump--position-window p))
+                                       (b (ace-jump--position-buffer p))
                                        ;; create one char overlay
                                        (ol (make-overlay o (1+ o) b)))
                                   ;; update leaf node to remember the ol
@@ -562,9 +562,9 @@ node and call LEAF-FUNC on each leaf node"
                                   ;; will show at the same time on both window
                                   ;; So we make it only on the specific window
                                   (overlay-put ol 'window w)
-                                  ;; associate the aj-position data with overlay
+                                  ;; associate the ace-jump--position data with overlay
                                   ;; so that we can use it to do the final jump
-                                  (overlay-put ol 'aj-data p)
+                                  (overlay-put ol 'ace-jump--data p)
                                   ;; next candidate node
                                   (setq position-list (cdr position-list))))))
     (ace-jump-tree-preorder-traverse tree func-create-overlay)
@@ -579,9 +579,9 @@ node and call LEAF-FUNC on each leaf node"
     (ace-jump-tree-preorder-traverse tree func-delete-overlay)))
 
 (defun ace-jump-buffer-substring (pos)
-  "Get the char under the POS, which is aj-position structure."
-  (let* ((w (aj-position-window pos))
-         (offset (aj-position-offset pos)))
+  "Get the char under the POS, which is ace-jump--position structure."
+  (let* ((w (ace-jump--position-window pos))
+         (offset (ace-jump--position-offset pos)))
     (with-selected-window w
       (buffer-substring offset (1+ offset)))))
 
@@ -599,7 +599,7 @@ node and call LEAF-FUNC on each leaf node"
                ol
                'display
                (concat (make-string 1 key)
-                       (let* ((pos (overlay-get ol 'aj-data))
+                       (let* ((pos (overlay-get ol 'ace-jump--data))
                               (subs (ace-jump-buffer-substring pos)))
                          (cond
                           ;; when tab, we use more space to prevent screen
@@ -608,7 +608,7 @@ node and call LEAF-FUNC on each leaf node"
                           ((string-equal subs "\t")
                            (make-string (1- (buffer-local-value
                                              'tab-width
-                                             (aj-position-buffer pos)))
+                                             (ace-jump--position-buffer pos)))
                                         ? ))
                           ;; when enter, we need to add one more enter
                           ;; to make the screen not change
@@ -637,26 +637,26 @@ node and call LEAF-FUNC on each leaf node"
    ((eq ace-jump-mode-scope 'global)
     (cl-loop for f in (frame-list)
              append (cl-loop for w in (window-list f)
-                             collect (make-aj-visual-area :buffer (window-buffer w)
-                                                          :window w
-                                                          :frame f))))
+                             collect (make-ace-jump--visual-area :buffer (window-buffer w)
+                                                                 :window w
+                                                                 :frame f))))
    ((eq ace-jump-mode-scope 'visible)
     (cl-loop for f in (frame-list)
              if (eq t (frame-visible-p f))
              append (cl-loop for w in (window-list f)
-                             collect (make-aj-visual-area :buffer (window-buffer w)
-                                                          :window w
-                                                          :frame f))))
+                             collect (make-ace-jump--visual-area :buffer (window-buffer w)
+                                                                 :window w
+                                                                 :frame f))))
    ((eq ace-jump-mode-scope 'frame)
     (cl-loop for w in (window-list (selected-frame))
-             collect (make-aj-visual-area :buffer (window-buffer w)
-                                          :window w
-                                          :frame (selected-frame))))
+             collect (make-ace-jump--visual-area :buffer (window-buffer w)
+                                                 :window w
+                                                 :frame (selected-frame))))
    ((eq ace-jump-mode-scope 'window)
     (list 
-     (make-aj-visual-area :buffer (current-buffer)
-                          :window (selected-window)
-                          :frame  (selected-frame))))
+     (make-ace-jump--visual-area :buffer (current-buffer)
+                                 :window (selected-window)
+                                 :frame  (selected-frame))))
    (t
     (error "[AceJump] Invalid ace-jump-mode-scope, please check your configuration"))))
 
@@ -702,8 +702,8 @@ You can control whether use the case sensitive via
       (if ace-jump-mode-gray-background
           (setq ace-jump-background-overlay-list
                 (cl-loop for va in visual-area-list
-                         collect (let* ((w (aj-visual-area-window va))
-                                        (b (aj-visual-area-buffer va))
+                         collect (let* ((w (ace-jump--visual-area-window va))
+                                        (b (ace-jump--visual-area-buffer va))
                                         (ol (make-overlay (window-start w)
                                                           (window-end w t)
                                                           b)))
@@ -754,11 +754,11 @@ You can control whether use the case sensitive via
 
 (defun ace-jump-jump-to (position)
   "Jump to the POSITION.
-POSITION is a `aj-position' structure storing the position information."
-  (let ((offset (aj-position-offset position))
-        (frame (aj-position-frame position))
-        (window (aj-position-window position))
-        (buffer (aj-position-buffer position))
+POSITION is a `ace-jump--position' structure storing the position information."
+  (let ((offset (ace-jump--position-offset position))
+        (frame (ace-jump--position-frame position))
+        (window (ace-jump--position-window position))
+        (buffer (ace-jump--position-buffer position))
         (line-mode-column 0))
 
     ;; save the column before do line jump, so that we can jump to the
@@ -801,10 +801,10 @@ then the mark stays where it is, and the jump extends the region, as
     (push-mark (point) t))
   ;; we also push the mark on the `ace-jump-mode-mark-ring', which has
   ;; more information for better jump back
-  (let ((pos (make-aj-position :offset (point)
-                               :visual-area (make-aj-visual-area :buffer (current-buffer)
-                                                                 :window (selected-window)
-                                                                 :frame  (selected-frame)))))
+  (let ((pos (make-ace-jump--position :offset (point)
+                                      :visual-area (make-ace-jump--visual-area :buffer (current-buffer)
+                                                                               :window (selected-window)
+                                                                               :frame  (selected-frame)))))
     (setq ace-jump-mode-mark-ring (cons pos ace-jump-mode-mark-ring)))
   ;; when exceeding the max count, discard the last one
   (if (> (length ace-jump-mode-mark-ring) ace-jump-mode-mark-ring-max)
@@ -817,7 +817,7 @@ then the mark stays where it is, and the jump extends the region, as
   (interactive)
   ;; we jump over the killed buffer position
   (while (and ace-jump-mode-mark-ring
-              (not (buffer-live-p (aj-position-buffer
+              (not (buffer-live-p (ace-jump--position-buffer
                                    (car ace-jump-mode-mark-ring)))))
     (setq ace-jump-mode-mark-ring (cdr ace-jump-mode-mark-ring)))
     
@@ -829,8 +829,8 @@ then the mark stays where it is, and the jump extends the region, as
       (let ((p (car ace-jump-mode-mark-ring)))
         ;; if we are jump back in the current buffer, that means we
         ;; only need to sync the buffer local mark-ring
-        (if (eq (current-buffer) (aj-position-buffer p))
-            (if (equal (aj-position-offset p) (marker-position (mark-marker)))
+        (if (eq (current-buffer) (ace-jump--position-buffer p))
+            (if (equal (ace-jump--position-offset p) (marker-position (mark-marker)))
                 ;; if the current marker is the same as where we need
                 ;; to jump back, we do the same as pop-mark actually,
                 ;; copy implementation from pop-mark, cannot use it
@@ -858,7 +858,7 @@ then the mark stays where it is, and the jump extends the region, as
               ;;             +---+---+---+                                       +---+---+---+
               ;;   
               ;; So what we need to do, is put the found mark in mark-ring to the end
-              (let ((po (aj-position-offset p)))
+              (let ((po (ace-jump--position-offset p)))
                 (setq mark-ring
                       (ace-jump-move-first-to-end-if mark-ring
                                                      (lambda (x)
@@ -868,7 +868,7 @@ then the mark stays where it is, and the jump extends the region, as
           ;; when we jump back to another buffer, do as the
           ;; pop-global-mark does. But we move the marker with the
           ;; same target buffer to the end, not always the first one
-          (let ((pb (aj-position-buffer p)))
+          (let ((pb (ace-jump--position-buffer p)))
             (setq global-mark-ring
                   (ace-jump-move-first-to-end-if global-mark-ring
                                                  (lambda (x)
@@ -1096,13 +1096,13 @@ KEY is the move key to use, the key that invoked the command by default."
      ;; if the node is leaf node, this is the final one
      ((eq (car node) 'leaf)
       ;; need to save aj data, as `ace-jump-done' will clean it
-      (let ((aj-data (overlay-get (cdr node) 'aj-data)))
+      (let ((ace-jump--data (overlay-get (cdr node) 'ace-jump--data)))
         ;; leave AceJump mode even if the jump fails
         (unwind-protect
             (progn
               (ace-jump-push-mark)
               (run-hooks 'ace-jump-mode-before-jump-hook)
-              (ace-jump-jump-to aj-data))
+              (ace-jump-jump-to ace-jump--data))
           (ace-jump-done)))
       (run-hooks 'ace-jump-mode-end-hook))
      (t
@@ -1184,12 +1184,12 @@ Move the same position to the end of `ace-jump-mode-mark-ring'."
         (setq ace-jump-mode-mark-ring
               (ace-jump-move-first-to-end-if ace-jump-mode-mark-ring
                                              (lambda (x)
-                                               (and (equal (aj-position-offset x) mp)
-                                                    (eq (aj-position-buffer x) cb))))))))
+                                               (and (equal (ace-jump--position-offset x) mp)
+                                                    (eq (ace-jump--position-buffer x) cb))))))))
 
 (defun ace-jump-pop-global-mark-advice (&rest _)
   "Sync the mark ring when `pop-global-mark' is called to jump back.
-Move the aj-position with the same buffer to the end of
+Move the ace-jump--position with the same buffer to the end of
 `ace-jump-mode-mark-ring'."
   ;; find the one that will be jump to
   (let ((index global-mark-ring))
@@ -1202,7 +1202,7 @@ Move the aj-position with the same buffer to the end of
           (setq ace-jump-mode-mark-ring
                 (ace-jump-move-to-end-if ace-jump-mode-mark-ring
                                          (lambda (x)
-                                           (eq (aj-position-buffer x) mb))))))))
+                                           (eq (ace-jump--position-buffer x) mb))))))))
 
 (defun ace-jump-mode-enable-mark-sync ()
   "Enable the sync function between ace jump mode mark ring and emacs mark ring.
