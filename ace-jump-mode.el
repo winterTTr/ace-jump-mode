@@ -658,6 +658,10 @@ You can constrol whether use the case sensitive via
               ;; cover: any other C-c key must stop AceJump as well
               (define-key map [?\C-c t] 'ace-jump-done)
               (define-key map [t] 'ace-jump-move-translated)
+              ;; switching the keyboard layout on MS-Windows sends this
+              ;; event, which should neither be a label nor stop
+              ;; AceJump: let it reach its global binding (`ignore')
+              (define-key map [language-change] nil)
               map))
 
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
