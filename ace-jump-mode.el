@@ -320,7 +320,8 @@ For the ascii table, refer to http://www.asciitable.com/
 
 There is four possible return value:
 1. `digit': the number character
-2. `alpha': A-Z and a-z
+2. `alpha': A-Z and a-z, and any other word constituent
+            according to the syntax table (e.g. Cyrillic letters)
 3. `punc' : all the printable punctuaiton
 4. `other': all the others"
   (cond
@@ -345,6 +346,10 @@ There is four possible return value:
      ;; punc after lowercase letter
      (and (>= query-char #x7B) (<= query-char #x7E)))
     'punc)
+   ;; a letter of any other script
+   ((and (characterp query-char)
+         (eq (char-syntax query-char) ?w))
+    'alpha)
    (t
     'other)))
 
@@ -639,7 +644,7 @@ You can constrol whether use the case sensitive via
               (dolist (key-code ace-jump-mode-move-keys)
                 (define-key map (make-string 1 key-code) 'ace-jump-move))
               (define-key map (kbd "C-c C-c") 'ace-jump-quick-exchange)
-              (define-key map [t] 'ace-jump-done)
+              (define-key map [t] 'ace-jump-move-translated)
               map))
 
       (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
@@ -897,11 +902,33 @@ You can constrol whether use the case sensitive via
         (setq index (1- submode-list-length)))
     (call-interactively (nth index ace-jump-mode-submode-list))))
 
-(defun ace-jump-move ()
-  "move cursor based on user input"
+(defun ace-jump-translate-move-key (event)
+  "Return the move key EVENT types on another keyboard layout, or nil.
+The translation is the one `local-function-key-map' holds for EVENT,
+e.g. the one built by `reverse-input-method'."
+  (let ((translation (and (characterp event)
+                          (lookup-key local-function-key-map (vector event)))))
+    (and (vectorp translation)
+         (= (length translation) 1)
+         (memq (aref translation 0) ace-jump-mode-move-keys)
+         (aref translation 0))))
+
+(defun ace-jump-move-translated ()
+  "Move by a key typed on another keyboard layout, or stop AceJump.
+`overriding-local-map' catches every key, so `local-function-key-map'
+never gets a chance to translate it: do it here."
   (interactive)
-  (let* ((index (let ((ret (cl-position (aref (this-command-keys) 0)
-                                     ace-jump-mode-move-keys)))
+  (let ((key (ace-jump-translate-move-key last-command-event)))
+    (if key
+        (ace-jump-move key)
+      (ace-jump-done))))
+
+(defun ace-jump-move (&optional key)
+  "Move cursor based on user input.
+KEY is the move key to use, the key that invoked the command by default."
+  (interactive)
+  (let* ((index (let ((ret (cl-position (or key (aref (this-command-keys) 0))
+                                        ace-jump-mode-move-keys)))
                   (if ret ret (length ace-jump-mode-move-keys))))
          (node (nth index (cdr ace-jump-search-tree))))
     (cond
