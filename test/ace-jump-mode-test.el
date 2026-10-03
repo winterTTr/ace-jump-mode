@@ -54,6 +54,7 @@ values.  AceJump state is cleared afterwards."
   (let ((buffer (make-symbol "buffer")))
     `(let ((ace-jump-mode-scope 'window)
            (ace-jump-mode-case-fold t)
+           (ace-jump-mode-upper-case t)
            (ace-jump-mode-move-keys (append (number-sequence ?a ?z)
                                             (number-sequence ?A ?Z)))
            (ace-jump-mode-gray-background t)
@@ -142,6 +143,7 @@ not stop it."
   (require 'cus-edit)
   (dolist (option '(ace-jump-word-mode-use-query-char
                     ace-jump-mode-case-fold
+                    ace-jump-mode-upper-case
                     ace-jump-mode-mark-ring-max
                     ace-jump-mode-gray-background
                     ace-jump-mode-scope
@@ -219,6 +221,28 @@ not stop it."
     (should (equal (ace-jump-test-candidates "a") '(1 3)))
     (let ((ace-jump-mode-case-fold nil))
       (should (equal (ace-jump-test-candidates "a") '(1))))))
+
+(ert-deftest ace-jump-test-upper-case-query ()
+  "An upper case query char makes the search case-sensitive, as in isearch."
+  ;;         t   T   ж   Ж   t   T   Ж
+  ;; at      1   5   9   13  17  21  25
+  (dolist (case '((ace-jump-char-mode ?t t t (1 5 17 21))
+                  (ace-jump-char-mode ?T t t (5 21))
+                  (ace-jump-char-mode ?T nil t (1 5 17 21))
+                  (ace-jump-char-mode ?t t nil (1 17))
+                  (ace-jump-word-mode ?T t t (5 21))
+                  (ace-jump-word-mode ?t t t (1 5 17 21))
+                  (ace-jump-char-mode ?Ж t t (13 25))
+                  (ace-jump-char-mode ?ж t t (9 13 25))))
+    (pcase-let ((`(,mode ,char ,upper-case ,case-fold ,expected) case))
+      (ert-info ((format "%s %c, upper-case %s, case-fold %s"
+                         mode char upper-case case-fold))
+        (ace-jump-test-with-buffer "tom Tom жук Жук tom Tom Жук"
+          (let ((ace-jump-mode-upper-case upper-case)
+                (ace-jump-mode-case-fold case-fold))
+            (funcall mode char)
+            (should (equal (mapcar #'car (ace-jump-test-labels))
+                           expected))))))))
 
 ;;;; Entering AceJump
 

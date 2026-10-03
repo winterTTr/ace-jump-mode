@@ -187,7 +187,16 @@
 (defcustom ace-jump-mode-case-fold case-fold-search
   "If non-nil, the ace-jump mode will ignore case.
 
-The default value is set to the same as `case-fold-search'."
+The default value is set to the same as `case-fold-search'.
+See also `ace-jump-mode-upper-case'."
+  :type 'boolean
+  :group 'ace-jump)
+
+(defcustom ace-jump-mode-upper-case t
+  "If non-nil, an upper case query char makes the search case-sensitive.
+So it does even when `ace-jump-mode-case-fold' is non-nil, as an upper
+case letter does in an incremental search: see `search-upper-case'.
+If nil, `ace-jump-mode-case-fold' alone decides."
   :type 'boolean
   :group 'ace-jump)
 
@@ -368,6 +377,14 @@ nil disables the translation: any key but a move key stops AceJump."
                  (function :tag "Other function"))
   :group 'ace-jump)
 
+
+(defun ace-jump-case-fold-p (query-char)
+  "Return non-nil if the search for QUERY-CHAR should ignore case.
+See `ace-jump-mode-case-fold' and `ace-jump-mode-upper-case'."
+  (and ace-jump-mode-case-fold
+       (not (and ace-jump-mode-upper-case
+                 (characterp query-char)
+                 (/= query-char (downcase query-char))))))
 
 (defun ace-jump-char-category ( query-char )
   "Detect the type of the char.
@@ -899,7 +916,8 @@ word-mode and char-mode"
   ;; others : digit , alpha, punc
   (setq ace-jump-query-char query-char)
   (setq ace-jump-current-mode 'ace-jump-char-mode)
-  (ace-jump-do (regexp-quote (make-string 1 query-char))))
+  (let ((ace-jump-mode-case-fold (ace-jump-case-fold-p query-char)))
+    (ace-jump-do (regexp-quote (make-string 1 query-char)))))
 
 
 ;;;###autoload
@@ -927,7 +945,8 @@ buffer."
           '(digit alpha))
     (setq ace-jump-query-char head-char)
     (setq ace-jump-current-mode 'ace-jump-word-mode)
-    (ace-jump-do (concat "\\<" (make-string 1 head-char))))
+    (let ((ace-jump-mode-case-fold (ace-jump-case-fold-p head-char)))
+      (ace-jump-do (concat "\\<" (make-string 1 head-char)))))
    ((eq (ace-jump-char-category head-char)
         'punc)
     ;; we do not query punctuation under word mode
