@@ -523,9 +523,13 @@ node and call LEAF-FUNC on each leaf node"
                                       (subs (ace-jump-buffer-substring pos)))
                                  (cond
                                   ;; when tab, we use more space to prevent screen
-                                  ;; from messing up
+                                  ;; from messing up, as wide as a tab is in
+                                  ;; the candidate's buffer
                                   ((string-equal subs "\t")
-                                   (make-string (1- tab-width) ? ))
+                                   (make-string (1- (buffer-local-value
+                                                     'tab-width
+                                                     (aj-position-buffer pos)))
+                                                ? ))
                                   ;; when enter, we need to add one more enter
                                   ;; to make the screen not change
                                   ((string-equal subs "\n")
