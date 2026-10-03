@@ -1,6 +1,10 @@
 Ace Jump Mode
 =============
 
+[![Emacs](https://img.shields.io/badge/Emacs-24.4+-8e44bd.svg)](https://www.gnu.org/software/emacs/)
+[![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](LICENSE)
+[![test](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml/badge.svg)](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml)
+
 Ace jump mode is a minor mode of emacs, which help you to move the
 cursor within Emacs.  You can move your cursor to **ANY** position (
 across window and frame ) in emacs by using only **3 times key
