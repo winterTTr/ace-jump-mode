@@ -173,29 +173,42 @@
     (nconc minor-mode-alist
            (list '(ace-jump-mode ace-jump-mode))))
 
-;; custoize variable
-(defvar ace-jump-word-mode-use-query-char t
-  "If we need to ask for the query char before enter `ace-jump-word-mode'")
+;;; user options
 
-(defvar ace-jump-mode-case-fold case-fold-search
+(defgroup ace-jump nil
+  "Jump to any visible position with a few key presses."
+  :group 'convenience)
+
+(defcustom ace-jump-word-mode-use-query-char t
+  "If we need to ask for the query char before enter `ace-jump-word-mode'"
+  :type 'boolean
+  :group 'ace-jump)
+
+(defcustom ace-jump-mode-case-fold case-fold-search
   "If non-nil, the ace-jump mode will ignore case.
 
-The default value is set to the same as `case-fold-search'.")
+The default value is set to the same as `case-fold-search'."
+  :type 'boolean
+  :group 'ace-jump)
 
 (defvar ace-jump-mode-mark-ring nil
   "The list that is used to store the history for jump back.")
 
-(defvar ace-jump-mode-mark-ring-max 100
-  "The max length of `ace-jump-mode-mark-ring'")
+(defcustom ace-jump-mode-mark-ring-max 100
+  "The max length of `ace-jump-mode-mark-ring'"
+  :type 'integer
+  :group 'ace-jump)
 
 
-(defvar ace-jump-mode-gray-background t
+(defcustom ace-jump-mode-gray-background t
   "By default, when there is more than one candidate, the ace
 jump mode will gray the background and then mark the possible
 candidate position. Set this to nil means do not gray
-background.")
+background."
+  :type 'boolean
+  :group 'ace-jump)
 
-(defvar ace-jump-mode-scope 'global
+(defcustom ace-jump-mode-scope 'global
   "Define what is the scope that ace-jump-mode works.
 
 Now, there are four kinds of values for this:
@@ -204,21 +217,28 @@ Now, there are four kinds of values for this:
 2. `frame'   : ace jump will work for the all windows in current frame.
 3. `visible' : ace jump will work for all windows in visible frames.
 4. `window'  : ace jump will only work on current window only.
-               This is the same behavior for 1.0 version.")
+               This is the same behavior for 1.0 version."
+  :type '(choice (const :tag "All windows of all frames" global)
+                 (const :tag "All windows of the visible frames" visible)
+                 (const :tag "All windows of the selected frame" frame)
+                 (const :tag "The selected window only" window))
+  :group 'ace-jump)
 
-(defvar ace-jump-mode-detect-punc t
+(defcustom ace-jump-mode-detect-punc t
   "When this is non-nil, the ace jump word mode will detect the
 char that is not alpha or number. Then, if the query char is a
 printable punctuaction, we will use char mode to start the ace
 jump mode. If it is nil, an error will come up when
-non-alpha-number is given under word mode.")
+non-alpha-number is given under word mode."
+  :type 'boolean
+  :group 'ace-jump)
 
 
-(defvar ace-jump-mode-submode-list
+(defcustom ace-jump-mode-submode-list
   '(ace-jump-word-or-line-mode
     ace-jump-char-mode
     ace-jump-line-mode)
-  "*The mode list when start ace jump mode.
+  "The mode list when start ace jump mode.
 The sequence is the calling sequence when give prefix argument.
 
 Such as:
@@ -240,19 +260,27 @@ Currently, the valid submode is:
    `ace-jump-line-mode'
    `ace-jump-word-or-line-mode'
    `ace-jump-char-or-line-mode'
+"
+  :type '(repeat (choice (function-item ace-jump-word-or-line-mode)
+                         (function-item ace-jump-word-mode)
+                         (function-item ace-jump-char-mode)
+                         (function-item ace-jump-char-or-line-mode)
+                         (function-item ace-jump-line-mode)
+                         (function :tag "Other command")))
+  :group 'ace-jump)
 
-")
-
-(defvar ace-jump-mode-move-keys
+(defcustom ace-jump-mode-move-keys
   (nconc (cl-loop for i from ?a to ?z collect i)
          (cl-loop for i from ?A to ?Z collect i))
-  "*The keys that used to move when enter AceJump mode.
+  "The keys that used to move when enter AceJump mode.
 Each key should only an printable character, whose name will
 fill each possible location.
 
 If you want your own moving keys, you can custom that as follow,
 for example, you only want to use lower case character:
-\(setq ace-jump-mode-move-keys (cl-loop for i from ?a to ?z collect i)) ")
+\(setq ace-jump-mode-move-keys (cl-loop for i from ?a to ?z collect i))"
+  :type '(repeat character)
+  :group 'ace-jump)
 
 
 ;;; some internal variable for ace jump
@@ -284,10 +312,6 @@ jump internal use.  If you want to change it, use
   "This should be nil or a point-dependant predicate
 that `ace-jump-search-candidate' will use as an additional filter.")
 
-(defgroup ace-jump nil
-  "ace jump group"
-  :group 'convenience)
-
 ;;; define the face
 (defface ace-jump-face-background
   '((t (:foreground "gray40")))
@@ -304,17 +328,23 @@ that `ace-jump-search-candidate' will use as an additional filter.")
   :group 'ace-jump)
 
 
-(defvar ace-jump-mode-before-jump-hook nil
-  "Function(s) to call just before moving the cursor to a selected match")
+(defcustom ace-jump-mode-before-jump-hook nil
+  "Function(s) to call just before moving the cursor to a selected match"
+  :type 'hook
+  :group 'ace-jump)
 
-(defvar ace-jump-mode-end-hook nil
-  "Function(s) to call when ace-jump-mode is going to end up")
+(defcustom ace-jump-mode-end-hook nil
+  "Function(s) to call when ace-jump-mode is going to end up"
+  :type 'hook
+  :group 'ace-jump)
 
-(defvar ace-jump-allow-invisible nil
+(defcustom ace-jump-allow-invisible nil
   "Control if ace-jump should select the invisible char as candidate.
 Normally, the ace jump mark cannot be seen if the target character
 is invisible.  So default to be nil, which will not include those
-invisible character as candidate.")
+invisible character as candidate."
+  :type 'boolean
+  :group 'ace-jump)
 
 (defcustom ace-jump-translate-key-function
   #'ace-jump-translate-key-by-function-key-map

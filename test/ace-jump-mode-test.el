@@ -136,6 +136,30 @@ not stop it."
   "Loading the package does not load the obsolete `cl' library."
   (should-not (featurep 'cl)))
 
+(ert-deftest ace-jump-test-user-options ()
+  "The user options are in the `ace-jump' group, defaults fitting types."
+  ;; the full widgets of the custom types, `hook' among them
+  (require 'cus-edit)
+  (dolist (option '(ace-jump-word-mode-use-query-char
+                    ace-jump-mode-case-fold
+                    ace-jump-mode-mark-ring-max
+                    ace-jump-mode-gray-background
+                    ace-jump-mode-scope
+                    ace-jump-mode-detect-punc
+                    ace-jump-mode-submode-list
+                    ace-jump-mode-move-keys
+                    ace-jump-mode-before-jump-hook
+                    ace-jump-mode-end-hook
+                    ace-jump-allow-invisible
+                    ace-jump-translate-key-function))
+    (ert-info ((symbol-name option))
+      (should (custom-variable-p option))
+      (should (member (list option 'custom-variable)
+                      (get 'ace-jump 'custom-group)))
+      (should (widget-apply (widget-convert (get option 'custom-type))
+                            :match (eval (car (get option 'standard-value))
+                                         t))))))
+
 (ert-deftest ace-jump-test-char-category ()
   "Characters are classified as digits, letters, punctuation or other."
   (with-temp-buffer
