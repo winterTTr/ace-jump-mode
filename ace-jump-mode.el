@@ -1,4 +1,4 @@
-;;; ace-jump-mode.el --- a quick cursor location minor mode for emacs -*- coding: utf-8-unix -*-
+;;; ace-jump-mode.el --- a quick cursor location minor mode for emacs -*- coding: utf-8-unix; lexical-binding: t -*-
 
 ;; Copyright (C) 2012 Free Software Foundation, Inc.
 
@@ -92,7 +92,9 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-lib)
+
+(declare-function server-buffer-done "server" (buffer &optional for-killing))
 
 ;;;; ============================================
 ;;;; Utilities for ace-jump-mode
@@ -103,7 +105,7 @@
 ;; ---------------------
 
 ;; make a position in a visual area
-(defstruct aj-position offset visual-area)
+(cl-defstruct aj-position offset visual-area)
 
 (defmacro aj-position-buffer (aj-pos)
   "Get the buffer object from `aj-position'."
@@ -128,19 +130,17 @@
 
 ;; a record for all the possible visual area
 ;; a visual area is a window that showing some buffer in some frame.
-(defstruct aj-visual-area buffer window frame recover-buffer)
+(cl-defstruct aj-visual-area buffer window frame recover-buffer)
 
 
 ;; ---------------------
 ;; a FIFO queue implementation
 ;; ---------------------
-(defstruct aj-queue head tail)
+(cl-defstruct aj-queue head tail)
 
 (defun aj-queue-push (item q)
   "enqueue"
-  (let ( (head (aj-queue-head q) )
-         (tail (aj-queue-tail q) )
-         (c (list item) ) )
+  (let ((c (list item)))
     (cond
      ((null (aj-queue-head q))
       (setf (aj-queue-head q) c)
@@ -199,11 +199,12 @@ background.")
   "Define what is the scope that ace-jump-mode works.
 
 Now, there are four kinds of values for this:
-1. 'global  : ace jump can work across any window and frame, this is also the default.
-2. 'frame   : ace jump will work for the all windows in current frame.
-3. 'visible : ace jump will work for all windows in visible frames.
-3. 'window  : ace jump will only work on current window only.
-              This is the same behavior for 1.0 version.")
+1. `global'  : ace jump can work across any window and frame,
+               this is also the default.
+2. `frame'   : ace jump will work for the all windows in current frame.
+3. `visible' : ace jump will work for all windows in visible frames.
+4. `window'  : ace jump will only work on current window only.
+               This is the same behavior for 1.0 version.")
 
 (defvar ace-jump-mode-detect-punc t
   "When this is non-nil, the ace jump word mode will detect the
@@ -222,10 +223,10 @@ The sequence is the calling sequence when give prefix argument.
 
 Such as:
   If you use the default sequence, which is
-      '(ace-jump-word-mode
+      \\='(ace-jump-word-mode
         ace-jump-char-mode
         ace-jump-line-mode)
-and using key to start up ace jump mode, such as 'C-c SPC',
+and using key to start up ace jump mode, such as `C-c SPC',
 then the usage to start each mode is as below:
 
    C-c SPC           ==> ace-jump-word-mode
@@ -240,15 +241,15 @@ Currently, the valid submode is:
 ")
 
 (defvar ace-jump-mode-move-keys
-  (nconc (loop for i from ?a to ?z collect i)
-         (loop for i from ?A to ?Z collect i))
+  (nconc (cl-loop for i from ?a to ?z collect i)
+         (cl-loop for i from ?A to ?Z collect i))
   "*The keys that used to move when enter AceJump mode.
 Each key should only an printable character, whose name will
 fill each possible location.
 
 If you want your own moving keys, you can custom that as follow,
 for example, you only want to use lower case character:
-\(setq ace-jump-mode-move-keys (loop for i from ?a to ?z collect i)) ")
+\(setq ace-jump-mode-move-keys (cl-loop for i from ?a to ?z collect i)) ")
 
 
 ;;; some internal variable for ace jump
@@ -308,8 +309,9 @@ that `ace-jump-search-candidate' will use as an additional filter.")
 
 (defvar ace-jump-allow-invisible nil
   "Control if ace-jump should select the invisible char as candidate.
-Normally, the ace jump mark cannot be seen if the target character is invisible.
-So default to be nil, which will not include those invisible character as candidate.")
+Normally, the ace jump mark cannot be seen if the target character
+is invisible.  So default to be nil, which will not include those
+invisible character as candidate.")
 
 
 (defun ace-jump-char-category ( query-char )
@@ -317,10 +319,10 @@ So default to be nil, which will not include those invisible character as candid
 For the ascii table, refer to http://www.asciitable.com/
 
 There is four possible return value:
-1. 'digit: the number character
-2. 'alpha: A-Z and a-z
-3. 'punc : all the printable punctuaiton
-4. 'other: all the others"
+1. `digit': the number character
+2. `alpha': A-Z and a-z
+3. `punc' : all the printable punctuaiton
+4. `other': all the others"
   (cond
    ;; digit
    ((and (>= query-char #x30) (<= query-char #x39))
@@ -348,14 +350,15 @@ There is four possible return value:
 
 
 (defun ace-jump-search-candidate (re-query-string visual-area-list)
-  "Search the RE-QUERY-STRING in current view, and return the candidate position list.
+  "Search the RE-QUERY-STRING in current view, return the candidate positions.
 RE-QUERY-STRING should be an valid regex used for `search-forward-regexp'.
 
-You can control whether use the case sensitive or not by `ace-jump-mode-case-fold'.
+You can control whether use the case sensitive or not by
+`ace-jump-mode-case-fold'.
 
 Every possible `match-beginning' will be collected.
 The returned value is a list of `aj-position' record."
-  (loop for va in visual-area-list
+  (cl-loop for va in visual-area-list
         append (let* ((current-window (aj-visual-area-window va))
                       (start-point (window-start current-window))
                       (end-point   (window-end   current-window t)))
@@ -363,7 +366,7 @@ The returned value is a list of `aj-position' record."
                    (save-excursion
                      (goto-char start-point)
                      (let ((case-fold-search ace-jump-mode-case-fold))
-                       (loop while (re-search-forward re-query-string nil t)
+                       (cl-loop while (re-search-forward re-query-string nil t)
                              until (or
                                     (> (point) end-point)
                                     (eobp))
@@ -383,9 +386,9 @@ The returned value is a list of `aj-position' record."
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Constrct the search tree, each item in the tree is a cons cell.
-The (car tree-node) is the type, which should be only 'branch or 'leaf.
-The (cdr tree-node) is data stored in a leaf when type is 'leaf,
-while a child node list when type is 'branch"
+The (car tree-node) is the type, which should be only `branch' or `leaf'.
+The (cdr tree-node) is data stored in a leaf when type is `leaf',
+while a child node list when type is `branch'"
   (let ((left-leaf-node (- total-leaf-node 1))
         (q (make-aj-queue))
         (node nil)
@@ -404,7 +407,7 @@ while a child node list when type is 'branch"
           ;; current child can fill the left leaf
           (progn
             (setf (cdr node)
-                  (loop for i from 1 to left-leaf-node
+                  (cl-loop for i from 1 to left-leaf-node
                         collect (cons 'leaf nil)))
             ;; so this should be the last action for while
             (setq left-leaf-node 0))
@@ -413,7 +416,7 @@ while a child node list when type is 'branch"
           ;; fill as much as possible. Push them to queue, so it have
           ;; the oppotunity to become 'branch node if necessary
           (setf (cdr node)
-                (loop for i from 1 to max-child-node
+                (cl-loop for i from 1 to max-child-node
                       collect (let ((n (cons 'leaf nil)))
                                 (aj-queue-push n q)
                                 n)))
@@ -448,7 +451,7 @@ node and call LEAF-FUNC on each leaf node"
 (defun ace-jump-populate-overlay-to-search-tree (tree candidate-list)
   "Populate the overlay to search tree, every leaf will give one overlay"
   
-  (lexical-let* (;; create the locally dynamic variable for the following function
+  (let* (;; create the locally dynamic variable for the following function
                  (position-list candidate-list)
                  
                  ;; make the function to create overlay for each leaf node,
@@ -495,8 +498,8 @@ node and call LEAF-FUNC on each leaf node"
       (buffer-substring offset (1+ offset)))))
 
 (defun ace-jump-update-overlay-in-search-tree (tree keys)
-  "Update overlay 'display property using each name in keys"
-  (lexical-let* (;; create dynamic variable for following function
+  "Update overlay `display' property using each name in KEYS."
+  (let* (;; create dynamic variable for following function
                  (key ?\0)
                  ;; populdate each leaf node to be the specific key,
                  ;; this only update 'display' property of overlay,
@@ -523,7 +526,7 @@ node and call LEAF-FUNC on each leaf node"
                                    ;; there are wide-width characters
                                    ;; so, we need paddings
                                    (make-string (max 0 (1- (string-width subs))) ? ))))))))))
-    (loop for k in keys
+    (cl-loop for k in keys
           for n in (cdr tree)
           do (progn
                ;; update "key" variable so that the function can use
@@ -540,20 +543,20 @@ node and call LEAF-FUNC on each leaf node"
   "Based on `ace-jump-mode-scope', search the possible buffers that is showing now."
   (cond
    ((eq ace-jump-mode-scope 'global)
-    (loop for f in (frame-list)
-          append (loop for w in (window-list f)
+    (cl-loop for f in (frame-list)
+          append (cl-loop for w in (window-list f)
                        collect (make-aj-visual-area :buffer (window-buffer w)
                                                     :window w
                                                     :frame f))))
    ((eq ace-jump-mode-scope 'visible)
-    (loop for f in (frame-list)
+    (cl-loop for f in (frame-list)
           if (eq t (frame-visible-p f))
-          append (loop for w in (window-list f)
+          append (cl-loop for w in (window-list f)
                        collect (make-aj-visual-area :buffer (window-buffer w)
                                                     :window w
                                                     :frame f))))
    ((eq ace-jump-mode-scope 'frame)
-    (loop for w in (window-list (selected-frame))
+    (cl-loop for w in (window-list (selected-frame))
           collect (make-aj-visual-area :buffer (window-buffer w)
                                        :window w
                                        :frame (selected-frame))))
@@ -569,14 +572,15 @@ node and call LEAF-FUNC on each leaf node"
 
 (defun ace-jump-do( re-query-string )
   "The main function to start the AceJump mode.
-QUERY-STRING should be a valid regexp string, which finally pass to `search-forward-regexp'.
+RE-QUERY-STRING should be a valid regexp string, which finally pass
+to `search-forward-regexp'.
 
-You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
-"
+You can constrol whether use the case sensitive via
+`ace-jump-mode-case-fold'."
   ;; we check the move key to make it valid, cause it can be customized by user
   (if (or (null ace-jump-mode-move-keys)
           (< (length ace-jump-mode-move-keys) 2)
-          (not (every #'characterp ace-jump-mode-move-keys)))
+          (not (cl-every #'characterp ace-jump-mode-move-keys)))
       (error "[AceJump] Invalid move keys: check ace-jump-mode-move-keys"))
   ;; search candidate position
   (let* ((visual-area-list (ace-jump-list-visual-area))
@@ -598,7 +602,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
       ;; create background for each visual area
       (if ace-jump-mode-gray-background
           (setq ace-jump-background-overlay-list
-                (loop for va in visual-area-list
+                (cl-loop for va in visual-area-list
                       collect (let* ((w (aj-visual-area-window va))
                                      (b (aj-visual-area-buffer va))
                                      (ol (make-overlay (window-start w)
@@ -643,7 +647,8 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
 
 
 (defun ace-jump-jump-to (position)
-  "Jump to the POSITION, which is a `aj-position' structure storing the position information"
+  "Jump to the POSITION.
+POSITION is a `aj-position' structure storing the position information."
   (let ((offset (aj-position-offset position))
         (frame (aj-position-frame position))
         (window (aj-position-window position))
@@ -743,7 +748,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
               ;;             +---+---+---+                                       +---+---+---+
               ;;   
               ;; So what we need to do, is put the found mark in mark-ring to the end
-              (lexical-let ((po (aj-position-offset p)))
+              (let ((po (aj-position-offset p)))
                 (setq mark-ring
                       (ace-jump-move-first-to-end-if mark-ring
                                                      (lambda (x)
@@ -753,7 +758,7 @@ You can constrol whether use the case sensitive via `ace-jump-mode-case-fold'.
           ;; when we jump back to another buffer, do as the
           ;; pop-global-mark does. But we move the marker with the
           ;; same target buffer to the end, not always the first one
-          (lexical-let ((pb (aj-position-buffer p)))
+          (let ((pb (aj-position-buffer p)))
             (setq global-mark-ring
                   (ace-jump-move-first-to-end-if global-mark-ring
                                                  (lambda (x)
@@ -895,7 +900,7 @@ You can constrol whether use the case sensitive via
 (defun ace-jump-move ()
   "move cursor based on user input"
   (interactive)
-  (let* ((index (let ((ret (position (aref (this-command-keys) 0)
+  (let* ((index (let ((ret (cl-position (aref (this-command-keys) 0)
                                      ace-jump-mode-move-keys)))
                   (if ret ret (length ace-jump-mode-move-keys))))
          (node (nth index (cdr ace-jump-search-tree))))
@@ -947,7 +952,7 @@ You can constrol whether use the case sensitive via
   (force-mode-line-update)
 
   ;; delete background overlay
-  (loop for ol in ace-jump-background-overlay-list
+  (cl-loop for ol in ace-jump-background-overlay-list
         do (delete-overlay ol))
   (setq ace-jump-background-overlay-list nil)
 
@@ -981,7 +986,7 @@ PRED is a function object which can pass to funcall and accept
 one argument, which will be every element in the list.
 Such as : (lambda (x) (equal x 1)) "
   (let (true-list false-list)
-    (loop for e in l
+    (cl-loop for e in l
           do (if (funcall pred e)
                  (setq true-list (cons e true-list))
                (setq false-list (cons e false-list))))
@@ -990,7 +995,7 @@ Such as : (lambda (x) (equal x 1)) "
 
 (defun ace-jump-move-first-to-end-if (l pred)
   "Only move the first found one to the end of list"
-  (lexical-let ((pred pred)
+  (let ((pred pred)
                 found)
     (ace-jump-move-to-end-if l
                              (lambda (x)
@@ -1000,23 +1005,22 @@ Such as : (lambda (x) (equal x 1)) "
 
   
 
-(defadvice pop-mark (before ace-jump-pop-mark-advice)
-  "When `pop-mark' is called to jump back, this advice will sync the mark ring.
+(defun ace-jump-pop-mark-advice (&rest _)
+  "Sync the mark ring when `pop-mark' is called to jump back.
 Move the same position to the end of `ace-jump-mode-mark-ring'."
-  (lexical-let ((mp (mark t))
-                (cb (current-buffer)))
+  (let ((mp (mark t))
+        (cb (current-buffer)))
     (if mp
         (setq ace-jump-mode-mark-ring
               (ace-jump-move-first-to-end-if ace-jump-mode-mark-ring
                                              (lambda (x)
                                                (and (equal (aj-position-offset x) mp)
                                                     (eq (aj-position-buffer x) cb))))))))
-            
 
-(defadvice pop-global-mark (before ace-jump-pop-global-mark-advice)
-  "When `pop-global-mark' is called to jump back, this advice will sync the mark ring.
-Move the aj-position with the same buffer to the end of `ace-jump-mode-mark-ring'."
-  (interactive)
+(defun ace-jump-pop-global-mark-advice (&rest _)
+  "Sync the mark ring when `pop-global-mark' is called to jump back.
+Move the aj-position with the same buffer to the end of
+`ace-jump-mode-mark-ring'."
   ;; find the one that will be jump to
   (let ((index global-mark-ring))
     ;; refer to the implementation of `pop-global-mark'
@@ -1024,12 +1028,11 @@ Move the aj-position with the same buffer to the end of `ace-jump-mode-mark-ring
       (setq index (cdr index)))
     (if index
         ;; find the mark
-        (lexical-let ((mb (marker-buffer (car index))))
+        (let ((mb (marker-buffer (car index))))
           (setq ace-jump-mode-mark-ring
                 (ace-jump-move-to-end-if ace-jump-mode-mark-ring
                                          (lambda (x)
                                            (eq (aj-position-buffer x) mb))))))))
-                                              
 
 (defun ace-jump-mode-enable-mark-sync ()
   "Enable the sync funciton between ace jump mode mark ring and emacs mark ring.
@@ -1041,10 +1044,8 @@ same marker from `ace-jump-mode-mark-ring' when user use
 
 2. Set variable `ace-jump-sync-emacs-mark-ring' to t, which will
 sync mark information with emacs mark ring. "
-  (ad-enable-advice 'pop-mark 'before 'ace-jump-pop-mark-advice)
-  (ad-activate 'pop-mark)
-  (ad-enable-advice 'pop-global-mark 'before 'ace-jump-pop-global-mark-advice)
-  (ad-activate 'pop-global-mark)
+  (advice-add 'pop-mark :before #'ace-jump-pop-mark-advice)
+  (advice-add 'pop-global-mark :before #'ace-jump-pop-global-mark-advice)
   (setq ace-jump-sync-emacs-mark-ring t))
 
 (defun ace-jump-mode-disable-mark-sync ()
@@ -1057,17 +1058,11 @@ same marker from `ace-jump-mode-mark-ring' when user use
 
 2. Set variable `ace-jump-sync-emacs-mark-ring' to nil, which
 will stop synchronizing mark information with emacs mark ring. "
-  (ad-disable-advice 'pop-mark 'before 'ace-jump-pop-mark-advice)
-  (ad-activate 'pop-mark)
-  (ad-disable-advice 'pop-global-mark 'before 'ace-jump-pop-global-mark-advice)
-  (ad-activate 'pop-global-mark)
+  (advice-remove 'pop-mark #'ace-jump-pop-mark-advice)
+  (advice-remove 'pop-global-mark #'ace-jump-pop-global-mark-advice)
   (setq ace-jump-sync-emacs-mark-ring nil))
 
 
 (provide 'ace-jump-mode)
 
 ;;; ace-jump-mode.el ends here
-
-;; Local Variables: 
-;; byte-compile-warnings: (not cl-functions) 
-;; End: 
