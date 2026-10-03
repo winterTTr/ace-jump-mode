@@ -152,7 +152,7 @@
 (defun aj-queue-pop (q)
   "dequeue"
   (if (null (aj-queue-head q))
-      (error "[AceJump] Interal Error: Empty queue"))
+      (error "[AceJump] Internal Error: Empty queue"))
 
   (let ((ret (aj-queue-head q)))
     (if (eq ret (aj-queue-tail q))
@@ -227,7 +227,7 @@ Now, there are four kinds of values for this:
 (defcustom ace-jump-mode-detect-punc t
   "When this is non-nil, the ace jump word mode will detect the
 char that is not alpha or number. Then, if the query char is a
-printable punctuaction, we will use char mode to start the ace
+printable punctuation, we will use char mode to start the ace
 jump mode. If it is nil, an error will come up when
 non-alpha-number is given under word mode."
   :type 'boolean
@@ -298,7 +298,7 @@ is used to highlight the target positions.")
 See `ace-jump-mode-submode-list' for possible value.")
 
 (defvar ace-jump-sync-emacs-mark-ring nil
-  "When this variable is not-nil, everytime `ace-jump-mode-pop-mark' is called,
+  "When this variable is non-nil, every time `ace-jump-mode-pop-mark' is called,
 ace jump will try to remove the same mark from buffer local mark
 ring and global-mark-ring, which help you to sync the mark
 information between emacs and ace jump.
@@ -309,7 +309,7 @@ jump internal use.  If you want to change it, use
 `ace-jump-mode-disable-mark-sync'.")
 
 (defvar ace-jump-search-filter nil
-  "This should be nil or a point-dependant predicate
+  "This should be nil or a point-dependent predicate
 that `ace-jump-search-candidate' will use as an additional filter.")
 
 ;;; define the face
@@ -377,7 +377,7 @@ There is four possible return value:
 1. `digit': the number character
 2. `alpha': A-Z and a-z, and any other word constituent
             according to the syntax table (e.g. Cyrillic letters)
-3. `punc' : all the printable punctuaiton, and any other printable
+3. `punc' : all the printable punctuation, and any other printable
             character (e.g. typographic quotes and dashes)
 4. `other': all the others"
   (cond
@@ -453,7 +453,7 @@ The returned value is a list of `aj-position' record."
                                           (goto-char (1+ (match-beginning 0)))))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
-  "Constrct the search tree, each item in the tree is a cons cell.
+  "Construct the search tree, each item in the tree is a cons cell.
 The (car tree-node) is the type, which should be only `branch' or `leaf'.
 The (cdr tree-node) is data stored in a leaf when type is `leaf',
 while a child node list when type is `branch'"
@@ -467,7 +467,7 @@ while a child node list when type is `branch'"
     (while (> left-leaf-node 0)
       (setq node (aj-queue-pop q))
       ;; when a node is picked up from stack, it will be changed to a
-      ;; branch node, we lose a leaft node
+      ;; branch node, we lose a leaf node
       (setf (car node) 'branch)
       ;; so we need to add the sum of leaf nodes that we wish to create
       (setq left-leaf-node (1+ left-leaf-node))
@@ -482,7 +482,7 @@ while a child node list when type is `branch'"
         ;; the child can not cover the left leaf
         (progn
           ;; fill as much as possible. Push them to queue, so it have
-          ;; the oppotunity to become 'branch node if necessary
+          ;; the opportunity to become 'branch node if necessary
           (setf (cdr node)
                 (cl-loop for i from 1 to max-child-node
                          collect (let ((n (cons 'leaf nil)))
@@ -537,7 +537,7 @@ node and call LEAF-FUNC on each leaf node"
                                   (setf (cdr node) ol)
                                   (overlay-put ol 'face 'ace-jump-face-foreground)
                                   ;; this is important, because sometimes the different
-                                  ;; window may dispaly the same buffer, in that case,
+                                  ;; window may display the same buffer, in that case,
                                   ;; overlay for different window (but the same buffer)
                                   ;; will show at the same time on both window
                                   ;; So we make it only on the specific window
@@ -569,7 +569,7 @@ node and call LEAF-FUNC on each leaf node"
   "Update overlay `display' property using each name in KEYS."
   (let* (;; the key of the subtree being labeled, set by the loop below
          (key ?\0)
-         ;; populdate each leaf node to be the specific key,
+         ;; populate each leaf node to be the specific key,
          ;; this only update 'display' property of overlay,
          ;; so that user can see the key from screen and select
          (func-update-overlay
@@ -756,7 +756,7 @@ POSITION is a `aj-position' structure storing the position information."
              (not (eq window (selected-window))))
         (select-window window))
 
-    ;; swith to buffer
+    ;; switch to buffer
     (if (and (buffer-live-p buffer)
              (not (eq buffer (window-buffer window))))
         (switch-to-buffer buffer))
@@ -786,14 +786,14 @@ then the mark stays where it is, and the jump extends the region, as
                                                                  :window (selected-window)
                                                                  :frame  (selected-frame)))))
     (setq ace-jump-mode-mark-ring (cons pos ace-jump-mode-mark-ring)))
-  ;; when exeed the max count, discard the last one
+  ;; when exceeding the max count, discard the last one
   (if (> (length ace-jump-mode-mark-ring) ace-jump-mode-mark-ring-max)
       (setcdr (nthcdr (1- ace-jump-mode-mark-ring-max) ace-jump-mode-mark-ring) nil)))
 
 
 ;;;###autoload
 (defun ace-jump-mode-pop-mark ()
-  "Pop up a postion from `ace-jump-mode-mark-ring', and jump back to that position"
+  "Pop up a position from `ace-jump-mode-mark-ring', and jump back to that position"
   (interactive)
   ;; we jump over the killed buffer position
   (while (and ace-jump-mode-mark-ring
@@ -828,7 +828,7 @@ then the mark stays where it is, and the jump extends the region, as
               ;;   Mark Ring | 2 | 3 | 4 | 5 |                                   | 2 | 4 | 5 | 3 |
               ;;             +---+---+---+---+                                   +---+---+---+---+
               ;;             +---+                                               +---+
-              ;;   Marker    | 1 |                                               | 1 | <-- Maker (not changed)
+              ;;   Marker    | 1 |                                               | 1 | <-- Marker (not changed)
               ;;             +---+                                               +---+
               ;;             +---+                                               +---+
               ;;   Cursor    | X |                     Pop up AJ mark 3          | 3 | <-- Cursor position
@@ -861,7 +861,7 @@ then the mark stays where it is, and the jump extends the region, as
                                        (list (car ace-jump-mode-mark-ring)))))
 
 (defun ace-jump-quick-exchange ()
-  "The function that we can use to quick exhange the current mode between
+  "The function that we can use to quick exchange the current mode between
 word-mode and char-mode"
   (interactive)
   (cond
@@ -984,7 +984,7 @@ as `ace-jump-word-mode' does."
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)
   "AceJump mode is a minor mode for you to quick jump to a
-position in the curret view.
+position in the current view.
    There are five submodes:
      `ace-jump-char-mode'
      `ace-jump-word-mode'
@@ -1001,7 +1001,7 @@ If you do not want to query char for word mode, you can change
 If you don't like the default move keys, you can change it by
 setting `ace-jump-mode-move-keys'.
 
-You can constrol whether use the case sensitive via
+You can control whether use the case sensitive via
 `ace-jump-mode-case-fold'.
 "
   (interactive "p")
@@ -1183,7 +1183,7 @@ Move the aj-position with the same buffer to the end of
                                            (eq (aj-position-buffer x) mb))))))))
 
 (defun ace-jump-mode-enable-mark-sync ()
-  "Enable the sync funciton between ace jump mode mark ring and emacs mark ring.
+  "Enable the sync function between ace jump mode mark ring and emacs mark ring.
 
 1. This function will enable the advice which activate on
 `pop-mark' and `pop-global-mark'. These advice will remove the
@@ -1197,9 +1197,9 @@ sync mark information with emacs mark ring. "
   (setq ace-jump-sync-emacs-mark-ring t))
 
 (defun ace-jump-mode-disable-mark-sync ()
-  "Disable the sync funciton between ace jump mode mark ring and emacs mark ring.
+  "Disable the sync function between ace jump mode mark ring and emacs mark ring.
 
-1. This function will diable the advice which activate on
+1. This function will disable the advice which activate on
 `pop-mark' and `pop-global-mark'. These advice will remove the
 same marker from `ace-jump-mode-mark-ring' when user use
 `pop-mark' or `global-pop-mark' to jump back. 
