@@ -79,3 +79,12 @@ How to install it?
 I want to know more about customized configuration?
 ---------------------------------------------------
 See [FAQ ](http://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
+
+License
+-------
+
+Copyright © 2011-2014 winterTTr <winterTTr@gmail.com>\
+Copyright © 2026 Kostafey <kostafey@gmail.com>
+and [contributors](https://github.com/kostafey/ace-jump-mode/graphs/contributors?from=6%2F27%2F2011)
+
+Distributed under the [GNU General Public License 3.0+](LICENSE)
