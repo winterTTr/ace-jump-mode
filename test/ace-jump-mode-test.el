@@ -238,6 +238,21 @@ not stop it."
     (ace-jump-test-type [f10 return ?c])
     (should (= (point) 10))))
 
+(ert-deftest ace-jump-test-word-mode-without-query-char ()
+  "Without a head char to ask for, word mode is a mode all the same.
+So starting it again while it runs replaces the jump in progress
+instead of leaving its labels behind."
+  (ace-jump-test-with-buffer "one two three"
+    (let ((ace-jump-word-mode-use-query-char nil))
+      (call-interactively #'ace-jump-word-mode)
+      (should (eq ace-jump-current-mode 'ace-jump-word-mode))
+      (should (equal ace-jump-mode " AceJump - Word"))
+      (should (equal (mapcar #'car (ace-jump-test-labels)) '(1 5 9)))
+      ;; started again from Lisp: no key gets through while it runs
+      (ace-jump-word-mode nil)
+      (ace-jump-done)
+      (should-not (overlays-in (point-min) (point-max))))))
+
 (ert-deftest ace-jump-test-word-or-line-without-query-char ()
   "Without a head char to ask for, word or line mode marks all words."
   (ace-jump-test-with-buffer "a1 a2\nb3\nc4"

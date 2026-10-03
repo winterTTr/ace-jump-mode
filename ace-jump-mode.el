@@ -885,6 +885,7 @@ buffer."
 
   (cond
    ((null head-char)
+    (setq ace-jump-current-mode 'ace-jump-word-mode)
     ;; \<  - start of word
     ;; \sw - word constituent
     (ace-jump-do "\\<\\sw"))
