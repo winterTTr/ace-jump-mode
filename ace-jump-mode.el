@@ -313,6 +313,28 @@ Normally, the ace jump mark cannot be seen if the target character
 is invisible.  So default to be nil, which will not include those
 invisible character as candidate.")
 
+(defcustom ace-jump-translate-key-function
+  #'ace-jump-translate-key-by-function-key-map
+  "Function to translate a key typed on another keyboard layout.
+AceJump calls it with the event of any key that is not a move key,
+and the function should return the character that key stands for
+on the layout of `ace-jump-mode-move-keys', or nil.  If the result
+is a move key, it selects that label; otherwise AceJump stops.
+
+The default looks the key up in `local-function-key-map', where
+`reverse-input-method' puts the mapping of another layout.  That
+map is terminal-local, so a function with a fixed table of its own
+also works in frames on other terminals, for example:
+
+  (setq ace-jump-translate-key-function
+        (lambda (event) (cdr (assq event my-layout-alist))))
+
+nil disables the translation: any key but a move key stops AceJump."
+  :type '(choice (const :tag "No translation" nil)
+                 (function-item ace-jump-translate-key-by-function-key-map)
+                 (function :tag "Other function"))
+  :group 'ace-jump)
+
 
 (defun ace-jump-char-category ( query-char )
   "Detect the type of the char.
@@ -928,21 +950,29 @@ You can constrol whether use the case sensitive via
         (setq index (1- submode-list-length)))
     (call-interactively (nth index ace-jump-mode-submode-list))))
 
-(defun ace-jump-translate-move-key (event)
-  "Return the move key EVENT types on another keyboard layout, or nil.
-The translation is the one `local-function-key-map' holds for EVENT,
-e.g. the one built by `reverse-input-method'."
+(defun ace-jump-translate-key-by-function-key-map (event)
+  "Return the character EVENT stands for in `local-function-key-map', or nil.
+This is the mapping `reverse-input-method' builds, for instance.
+The default value of `ace-jump-translate-key-function'."
   (let ((translation (and (characterp event)
                           (lookup-key local-function-key-map (vector event)))))
     (and (vectorp translation)
          (= (length translation) 1)
-         (memq (aref translation 0) ace-jump-mode-move-keys)
+         (characterp (aref translation 0))
          (aref translation 0))))
+
+(defun ace-jump-translate-move-key (event)
+  "Return the move key EVENT types on another keyboard layout, or nil.
+The translation is done by `ace-jump-translate-key-function'."
+  (let ((key (and ace-jump-translate-key-function
+                  (funcall ace-jump-translate-key-function event))))
+    (and key (memq key ace-jump-mode-move-keys) key)))
 
 (defun ace-jump-move-translated ()
   "Move by a key typed on another keyboard layout, or stop AceJump.
 `overriding-local-map' catches every key, so `local-function-key-map'
-never gets a chance to translate it: do it here."
+never gets a chance to translate it: translate it here with
+`ace-jump-translate-key-function'."
   (interactive)
   (let ((key (ace-jump-translate-move-key last-command-event)))
     (if key
