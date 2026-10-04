@@ -235,24 +235,18 @@ error."
 
 
 (defcustom ace-jump-mode-submode-list
-  '(ace-jump-word-or-line-mode
+  '(ace-jump-word-mode
     ace-jump-char-mode
     ace-jump-line-mode)
   "The submodes `ace-jump-mode' chooses from by the prefix argument.
 Without a prefix argument it starts the first one, and each
 \\[universal-argument] moves on to the next one, the last one at most.  A numeric
 prefix argument counts as \\[universal-argument] does, as 4 per press.  So by
-default it starts `ace-jump-word-or-line-mode', where RET as the head
-char gives line mode, `ace-jump-char-mode' with \\[universal-argument] and
-`ace-jump-line-mode' with \\[universal-argument] \\[universal-argument].
-
-The submodes are `ace-jump-word-mode', `ace-jump-char-mode',
-`ace-jump-line-mode', `ace-jump-word-or-line-mode' and
-`ace-jump-char-or-line-mode'."
-  :type '(repeat (choice (function-item ace-jump-word-or-line-mode)
-                         (function-item ace-jump-word-mode)
+default it starts `ace-jump-word-mode', `ace-jump-char-mode' with
+\\[universal-argument] and `ace-jump-line-mode' with \\[universal-argument] \\[universal-argument].  In the first two, RET
+instead of a char starts line mode as well."
+  :type '(repeat (choice (function-item ace-jump-word-mode)
                          (function-item ace-jump-char-mode)
-                         (function-item ace-jump-char-or-line-mode)
                          (function-item ace-jump-line-mode)
                          (function :tag "Other command")))
   :group 'ace-jump)
@@ -881,7 +875,8 @@ Repeated calls go further back, around `ace-jump-mode-mark-ring'."
 ;;;###autoload
 (defun ace-jump-char-mode (query-char)
   "Jump to an occurrence of QUERY-CHAR in view.
-An upper case QUERY-CHAR makes the search case-sensitive: see
+RET as QUERY-CHAR starts `ace-jump-line-mode' instead.  An upper case
+QUERY-CHAR makes the search case-sensitive: see
 `ace-jump-mode-upper-case'."
   (interactive (list (read-char "Query Char:")))
 
@@ -890,22 +885,26 @@ An upper case QUERY-CHAR makes the search case-sensitive: see
   ;; jump mode.  So we stop the previous one first.
   (if ace-jump-current-mode (ace-jump-done))
 
-  (if (eq (ace-jump-char-category query-char) 'other)
+  (cond
+   ((eq query-char ?\r)
+    (ace-jump-line-mode))
+   ((eq (ace-jump-char-category query-char) 'other)
     (user-error "[AceJump] Non-printable character"))
-
-  ;; others : digit , alpha, punc
-  (setq ace-jump-query-char query-char)
-  (setq ace-jump-current-mode 'ace-jump-char-mode)
-  (let ((ace-jump-mode-case-fold (ace-jump-case-fold-p query-char)))
-    (ace-jump-do (regexp-quote (make-string 1 query-char)))))
+   ;; others : digit , alpha, punc
+   (t
+    (setq ace-jump-query-char query-char)
+    (setq ace-jump-current-mode 'ace-jump-char-mode)
+    (let ((ace-jump-mode-case-fold (ace-jump-case-fold-p query-char)))
+      (ace-jump-do (regexp-quote (make-string 1 query-char)))))))
 
 
 ;;;###autoload
 (defun ace-jump-word-mode (head-char)
   "Jump to a word in view that starts with HEAD-CHAR.
-If HEAD-CHAR is nil, as when `ace-jump-word-mode-use-query-char' is
-nil, mark all the words in view.  Punctuation as HEAD-CHAR falls back
-to char mode: see `ace-jump-mode-detect-punc'."
+RET as HEAD-CHAR starts `ace-jump-line-mode' instead.  If HEAD-CHAR is
+nil, as when `ace-jump-word-mode-use-query-char' is nil, mark all the
+words in view.  Punctuation as HEAD-CHAR falls back to char mode: see
+`ace-jump-mode-detect-punc'."
   (interactive (list (if ace-jump-word-mode-use-query-char
                          (read-char "Head Char:")
                        nil)))
@@ -921,6 +920,8 @@ to char mode: see `ace-jump-mode-detect-punc'."
     ;; \<  - start of word
     ;; \sw - word constituent
     (ace-jump-do "\\<\\sw"))
+   ((eq head-char ?\r)
+    (ace-jump-line-mode))
    ((memq (ace-jump-char-category head-char)
           '(digit alpha))
     (setq ace-jump-query-char head-char)
@@ -952,32 +953,6 @@ to char mode: see `ace-jump-mode-detect-punc'."
 
   (setq ace-jump-current-mode 'ace-jump-line-mode)
   (ace-jump-do "^"))
-
-;;;###autoload
-(defun ace-jump-char-or-line-mode (query-char)
-  "AceJump char or line mode.
-Like `ace-jump-char-mode' but will switch to `ace-jump-line-mode' if
-return is given as QUERY-CHAR."
-  (interactive (list (read-char "Query Char:")))
-
-  (if (equal query-char #xD) ;; If Query Char is return
-      (ace-jump-line-mode)
-    (ace-jump-char-mode query-char)))
-
-;;;###autoload
-(defun ace-jump-word-or-line-mode (head-char)
-  "AceJump word or line mode.
-Like `ace-jump-word-mode' but will switch to `ace-jump-line-mode' if
-return is given as HEAD-CHAR.  With `ace-jump-word-mode-use-query-char'
-set to nil, no head char is asked for, and all the words are marked,
-as `ace-jump-word-mode' does."
-  (interactive (list (if ace-jump-word-mode-use-query-char
-                         (read-char "Head Char:")
-                       nil)))
-
-  (if (equal head-char #xD) ;; If head-char is return
-      (ace-jump-line-mode)
-    (ace-jump-word-mode head-char)))
 
 ;;;###autoload
 (defun ace-jump-mode(&optional prefix)

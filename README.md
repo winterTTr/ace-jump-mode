@@ -23,7 +23,7 @@ Usage
 
 With the keys from [Installation](#installation):
 
-`M-a` ==> `ace-jump-word-or-line-mode`
+`M-a` ==> `ace-jump-word-mode`
 
 > Go to a word by entering its first character, then selecting the
 > highlighted key to move to it.  Go to a line by pressing `RET`
