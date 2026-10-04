@@ -10,6 +10,8 @@ cursor within Emacs.  You can move your cursor to **ANY** position
 (across windows and frames) in Emacs by using only **3 key presses**.
 Have a try and I am sure you will love it.
 
+![Word mode: the words starting with "h" labeled a, b, c...](images/ace-jump-mode.png)
+
 This repository carries on
 [winterTTr/ace-jump-mode](https://github.com/winterTTr/ace-jump-mode),
 not updated since 2014, and gathers the fixes left in its pull
