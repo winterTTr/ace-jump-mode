@@ -100,6 +100,20 @@ default, or the selected window only), case sensitivity and so on.
 See also the [FAQ](https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
 of the original project.
 
+In a [ghostel](https://github.com/dakra/ghostel) terminal, a jump has
+to leave the live input, or the next redraw takes point back to the
+terminal cursor.  Leaving it may take point back as well, so restore
+it afterwards:
+
+```elisp
+(add-hook 'ace-jump-mode-end-hook
+          (lambda ()
+            (when (derived-mode-p 'ghostel-mode)
+              (let ((target (point)))
+                (ghostel-maybe-leave-input)
+                (goto-char target)))))
+```
+
 
 License
 -------
