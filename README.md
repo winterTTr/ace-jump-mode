@@ -3,7 +3,7 @@ Ace Jump Mode
 
 [![Emacs](https://img.shields.io/badge/Emacs-24.4+-8e44bd.svg)](https://www.gnu.org/software/emacs/)
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](LICENSE)
-[![test](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml/badge.svg)](https://github.com/kostafey/ace-jump-mode/actions/workflows/test.yml)
+[![test](https://github.com/winterTTr/ace-jump-mode/actions/workflows/test.yml/badge.svg)](https://github.com/winterTTr/ace-jump-mode/actions/workflows/test.yml)
 
 Ace jump mode is a minor mode of Emacs, which helps you to move the
 cursor within Emacs.  You can move your cursor to **ANY** position
@@ -11,11 +11,6 @@ cursor within Emacs.  You can move your cursor to **ANY** position
 Have a try and I am sure you will love it.
 
 ![Word mode: the words starting with "h" labeled a, b, c...](images/ace-jump-mode.png)
-
-This repository carries on
-[winterTTr/ace-jump-mode](https://github.com/winterTTr/ace-jump-mode),
-not updated since 2014, and gathers the fixes left in its pull
-requests and forks.
 
 
 Usage
@@ -55,29 +50,23 @@ action.
 Installation
 ------------
 
-The [MELPA](https://melpa.org/#/ace-jump-mode) package is still built
-from the original repository, so install this one from git.  With
-Emacs 30 or later:
+Install ace-jump-mode from [MELPA](https://melpa.org/#/ace-jump-mode),
+for instance with `use-package`:
 
 ```elisp
 (use-package ace-jump-mode
-  :vc (:url "https://github.com/kostafey/ace-jump-mode" :rev :newest)
+  :ensure t
   :bind (("M-a" . ace-jump-mode)               ; instead of `backward-sentence'
          ("C-c M-a" . ace-jump-mode-pop-mark))
   :config
   (ace-jump-mode-enable-mark-sync))
 ```
 
-With [straight.el](https://github.com/radian-software/straight.el),
-replace the `:vc` line with
-`:straight (:host github :repo "kostafey/ace-jump-mode")`.  If another
-package depends on ace-jump-mode, override its recipe instead, so that
-this one is used for both:
-
-```elisp
-(straight-override-recipe
- '(ace-jump-mode :type git :host github :repo "kostafey/ace-jump-mode"))
-```
+To follow the latest commit instead, replace `:ensure t` with
+`:vc (:url "https://github.com/winterTTr/ace-jump-mode" :rev :newest)`
+in Emacs 30 or later, or with
+[straight.el](https://github.com/radian-software/straight.el)
+`:straight (:host github :repo "winterTTr/ace-jump-mode")`.
 
 Any other free keys will do as well, `C-c j` for one.
 `ace-jump-mode-enable-mark-sync` keeps `ace-jump-mode-pop-mark` in sync
@@ -98,7 +87,7 @@ Customization
 keys, the scope of a jump (all the windows of all the frames by
 default, or the selected window only), case sensitivity and so on.
 See also the [FAQ](https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
-of the original project.
+in the wiki.
 
 In a [ghostel](https://github.com/dakra/ghostel) terminal, a jump has
 to leave the live input, or the next redraw takes point back to the
@@ -118,8 +107,7 @@ it afterwards:
 License
 -------
 
-Copyright © 2011-2014 winterTTr <winterTTr@gmail.com>\
-Copyright © 2026 Kostafey <kostafey@gmail.com>
-and [contributors](https://github.com/kostafey/ace-jump-mode/graphs/contributors?from=6%2F27%2F2011)
+Copyright © 2011-2026 winterTTr <winterTTr@gmail.com>
+and [contributors](https://github.com/winterTTr/ace-jump-mode/graphs/contributors?from=6%2F27%2F2011)
 
 Distributed under the [GNU General Public License 3.0+](LICENSE)

@@ -5,7 +5,7 @@
 
 ;; Author: winterTTr <winterTTr@gmail.com>
 ;; Maintainer: Kostafey <kostafey@gmail.com>
-;; URL: https://github.com/kostafey/ace-jump-mode
+;; URL: https://github.com/winterTTr/ace-jump-mode
 ;; Version: 3.0
 ;; Package-Requires: ((emacs "24.4"))
 ;; Keywords: convenience, motion, location, cursor
@@ -77,7 +77,7 @@
 ;; M-x customize-group RET ace-jump RET lists the options.
 
 ;;; For more information
-;; README: https://github.com/kostafey/ace-jump-mode
+;; README: https://github.com/winterTTr/ace-jump-mode
 ;; FAQ   : https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ
 
 ;;; Code:
