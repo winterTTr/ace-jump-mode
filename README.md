@@ -99,6 +99,11 @@ default, or the selected window only), case sensitivity and so on.
 See also the [FAQ](https://github.com/winterTTr/ace-jump-mode/wiki/AceJump-FAQ)
 in the wiki.
 
+The labels use the face `ace-jump-face-foreground`, and the grayed
+text `ace-jump-face-background`.  If they don't suit your color theme
+or terminal, change them with `M-x customize-face`, or leave the text
+as it is with `(setq ace-jump-mode-gray-background nil)`.
+
 In a [ghostel](https://github.com/dakra/ghostel) terminal, a jump has
 to leave the live input, or the next redraw takes point back to the
 terminal cursor.  Leaving it may take point back as well, so restore
