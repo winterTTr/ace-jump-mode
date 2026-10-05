@@ -3,6 +3,8 @@ Ace Jump Mode
 
 [![Emacs](https://img.shields.io/badge/Emacs-24.4+-8e44bd.svg)](https://www.gnu.org/software/emacs/)
 [![License GPL 3](https://img.shields.io/badge/license-GPL_3-green.svg)](LICENSE)
+[![MELPA](https://melpa.org/packages/ace-jump-mode-badge.svg)](https://melpa.org/#/ace-jump-mode)
+[![MELPA Stable](https://stable.melpa.org/packages/ace-jump-mode-badge.svg)](https://stable.melpa.org/#/ace-jump-mode)
 [![test](https://github.com/winterTTr/ace-jump-mode/actions/workflows/test.yml/badge.svg)](https://github.com/winterTTr/ace-jump-mode/actions/workflows/test.yml)
 
 Ace jump mode is a minor mode of Emacs, which helps you to move the
@@ -62,11 +64,19 @@ for instance with `use-package`:
   (ace-jump-mode-enable-mark-sync))
 ```
 
-To follow the latest commit instead, replace `:ensure t` with
-`:vc (:url "https://github.com/winterTTr/ace-jump-mode" :rev :newest)`
-in Emacs 30 or later, or with
-[straight.el](https://github.com/radian-software/straight.el)
-`:straight (:host github :repo "winterTTr/ace-jump-mode")`.
+To follow the latest commit instead, replace `:ensure t` in Emacs 30
+or later with
+
+```elisp
+:vc (:url "https://github.com/winterTTr/ace-jump-mode" :rev :newest)
+```
+
+or, with [straight.el](https://github.com/radian-software/straight.el),
+with
+
+```elisp
+:straight (:host github :repo "winterTTr/ace-jump-mode")
+```
 
 Any other free keys will do as well, `C-c j` for one.
 `ace-jump-mode-enable-mark-sync` keeps `ace-jump-mode-pop-mark` in sync
