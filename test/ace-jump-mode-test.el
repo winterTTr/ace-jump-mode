@@ -374,6 +374,25 @@ instead of leaving its labels behind."
         (ace-jump-test-reset)
         (kill-buffer other)))))
 
+(ert-deftest ace-jump-test-word-mode-syntax-table ()
+  "`ace-jump-word-mode-syntax-table' tells word starts in word mode only."
+  (ace-jump-test-with-buffer "go /git/grep go"
+    (let ((table (make-syntax-table)))
+      ;; "/" a word constituent, as in a ghostel terminal
+      (modify-syntax-entry ?/ "w" table)
+      (set-syntax-table table)
+      (ace-jump-word-mode ?g)
+      (should (equal (mapcar #'car (ace-jump-test-labels)) '(1 14)))
+      (ace-jump-test-reset)
+      (setq ace-jump-word-mode-syntax-table (standard-syntax-table))
+      (ace-jump-word-mode ?g)
+      (should (equal (mapcar #'car (ace-jump-test-labels)) '(1 5 9 14)))
+      (ace-jump-test-reset)
+      ;; other modes keep the syntax table of the buffer
+      (should (eq (char-syntax ?/) ?w))
+      (setq ace-jump-current-mode 'ace-jump-char-mode)
+      (should (equal (ace-jump-test-candidates "\\<g") '(1 14))))))
+
 (ert-deftest ace-jump-test-non-ascii-query ()
   "Letters of any script start a word jump; other printable characters
 a char jump."

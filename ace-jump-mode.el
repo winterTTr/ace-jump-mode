@@ -295,6 +295,14 @@ Never set this variable directly, it is for AceJump internal use: use
 after a match and the match data set, and drops the match if the
 predicate returns nil.")
 
+(defvar-local ace-jump-word-mode-syntax-table nil
+  "The syntax table that tells word starts in `ace-jump-word-mode', or nil.
+If nil, word mode follows the syntax table of the buffer searched.
+Set it in a buffer whose syntax table joins words that you want to
+jump into: in a ghostel terminal, say, where \"/\" is a word
+constituent so that a path is selected as a whole, use
+`standard-syntax-table' to find the words inside the path.")
+
 ;;; define the face
 (defface ace-jump-face-background
   '((t (:foreground "gray40")))
@@ -411,7 +419,8 @@ Return the candidate positions in view, a list of `ace-jump--position'.
 RE-QUERY-STRING should be a valid regexp for `re-search-forward'.
 
 Every `match-beginning' in view is collected, and
-`ace-jump-mode-case-fold' decides whether case is ignored."
+`ace-jump-mode-case-fold' decides whether case is ignored.  Word mode
+searches a buffer with its `ace-jump-word-mode-syntax-table', if any."
   (cl-loop for va in visual-area-list
            append (let* ((current-window (ace-jump--visual-area-window va))
                          (start-point (window-start current-window))
@@ -420,26 +429,30 @@ Every `match-beginning' in view is collected, and
                       (save-excursion
                         (goto-char start-point)
                         (let ((case-fold-search ace-jump-mode-case-fold))
-                          (cl-loop while (re-search-forward re-query-string nil t)
-                                   ;; `window-end' is the first position out of
-                                   ;; view.  Check where the match starts, not
-                                   ;; where it ends: a match may end right at
-                                   ;; the end of the buffer.  This also skips
-                                   ;; "^" on the empty line after a final newline.
-                                   until (>= (match-beginning 0) end-point)
-                                   if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
-                                           (or (null ace-jump-search-filter)
-                                               (ignore-errors
-                                                 (funcall ace-jump-search-filter))))
-                                   collect (make-ace-jump--position :offset (match-beginning 0)
-                                                                    :visual-area va)
-                                   ;; when we use "^" to search line mode,
-                                   ;; re-search-backward will not move one
-                                   ;; char after search success, as line
-                                   ;; begin is not a valid visible char.
-                                   ;; We need to help it to move forward.
-                                   do (if (string-equal re-query-string "^")
-                                          (goto-char (1+ (match-beginning 0)))))))))))
+                          (with-syntax-table
+                              (or (and (eq ace-jump-current-mode 'ace-jump-word-mode)
+                                       ace-jump-word-mode-syntax-table)
+                                  (syntax-table))
+                            (cl-loop while (re-search-forward re-query-string nil t)
+                                     ;; `window-end' is the first position out of
+                                     ;; view.  Check where the match starts, not
+                                     ;; where it ends: a match may end right at
+                                     ;; the end of the buffer.  This also skips
+                                     ;; "^" on the empty line after a final newline.
+                                     until (>= (match-beginning 0) end-point)
+                                     if (and (or ace-jump-allow-invisible (not (invisible-p (match-beginning 0))))
+                                             (or (null ace-jump-search-filter)
+                                                 (ignore-errors
+                                                   (funcall ace-jump-search-filter))))
+                                     collect (make-ace-jump--position :offset (match-beginning 0)
+                                                                      :visual-area va)
+                                     ;; when we use "^" to search line mode,
+                                     ;; re-search-backward will not move one
+                                     ;; char after search success, as line
+                                     ;; begin is not a valid visible char.
+                                     ;; We need to help it to move forward.
+                                     do (if (string-equal re-query-string "^")
+                                            (goto-char (1+ (match-beginning 0))))))))))))
 
 (defun ace-jump-tree-breadth-first-construct (total-leaf-node max-child-node)
   "Construct a search tree of TOTAL-LEAF-NODE leaves, breadth first.

@@ -118,6 +118,18 @@ it afterwards:
                 (goto-char target)))))
 ```
 
+ghostel makes `/` a word constituent, so that a double click selects
+a path as a whole.  Word mode then finds no word inside a path: in
+`/bin/emacs`, neither `b` nor `e` starts a word.  To jump to them, let
+word mode find the word starts with the standard syntax table:
+
+```elisp
+(add-hook 'ghostel-mode-hook
+          (lambda ()
+            (setq-local ace-jump-word-mode-syntax-table
+                        (standard-syntax-table))))
+```
+
 
 License
 -------
